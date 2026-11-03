@@ -1,0 +1,27 @@
+{
+  "name": "项目中枢 · Project Hub",
+  "short_name": "项目中枢",
+  "description": "个人项目中枢：项目、任务、创意、财务、日程与 AI 伙伴",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#040a14",
+  "theme_color": "#040a14",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "工作总览", "url": "./", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "AI 伙伴", "url": "./?p=ai", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
