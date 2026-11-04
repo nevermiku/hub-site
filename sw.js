@@ -4,7 +4,7 @@
  *   - 静态资源（同源 assets/chara/图标）：缓存优先，后台更新
  *   - 第三方 API（CloudBase、新闻接口、Live2D CDN）：不缓存，直连
  */
-const VERSION = 'ph-1793805641';
+const VERSION = 'ph-1793806670';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
