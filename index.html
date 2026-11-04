@@ -47,7 +47,23 @@
   })();
   if('serviceWorker' in navigator && location.protocol==='https:'){
     window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(){});
+      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(function(reg){
+        reg.update().catch(function(){});
+        // 新版本安装完成后自动接管并刷新一次，避免用户看到旧缓存
+        reg.addEventListener('updatefound',function(){
+          var w=reg.installing;
+          if(!w)return;
+          w.addEventListener('statechange',function(){
+            if(w.state==='installed'&&navigator.serviceWorker.controller){
+              try{ w.postMessage({type:'SKIP_WAITING'}); }catch(e){}
+            }
+          });
+        });
+      }).catch(function(){});
+      var reloaded=false;
+      navigator.serviceWorker.addEventListener('controllerchange',function(){
+        if(reloaded)return; reloaded=true; location.reload();
+      });
     });
   }
 </script>

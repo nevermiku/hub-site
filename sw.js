@@ -4,12 +4,16 @@
  *   - 静态资源（同源 assets/chara/图标）：缓存优先，后台更新
  *   - 第三方 API（CloudBase、新闻接口、Live2D CDN）：不缓存，直连
  */
-const VERSION = 'ph-v1';
+const VERSION = 'ph-1793800510';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE).catch(() => {})));
+});
+
+self.addEventListener('message', e => {
+  if(e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
