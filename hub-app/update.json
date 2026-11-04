@@ -1,9 +1,9 @@
 {
   "appid": "__UNI__PROJECTHUB",
   "name": "项目中枢",
-  "version": "1.2.1",
-  "versionCode": "121",
+  "version": "1.2.2",
+  "versionCode": "122",
   "wgtUrl": "https://nevermiku.github.io/hub-site/hub-app/projecthub.wgt",
-  "md5": "a202137ef269f417dd42ee53a72730c4",
-  "note": "1.2.1 修复LINK START无声/桌宠全屏自由活动/语音包选择器/底部导航6项/模型预取加速"
+  "md5": "1620256db43b8a7c87d90a68f3bb46ba",
+  "note": "1.2.2 语速放慢/桌宠真人走路/拖拽修复/内置BGM点击即播/语音包提前入口/背景主题全页生效"
 }
