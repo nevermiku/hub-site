@@ -25,7 +25,7 @@
   #boot-splash img{width:84px;height:84px;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
 </style>
-  <script type="module" crossorigin src="./assets/index-BUBDKuIX.js"></script>
+  <script type="module" crossorigin src="./assets/index-bUX637xu.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-CJQ4Pzxe.css">
 </head>
 <body>
@@ -45,27 +45,36 @@
     }
     setTimeout(hide,8000);
   })();
-  if('serviceWorker' in navigator && location.protocol==='https:'){
-    window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(function(reg){
-        reg.update().catch(function(){});
-        // 新版本安装完成后自动接管并刷新一次，避免用户看到旧缓存
-        reg.addEventListener('updatefound',function(){
-          var w=reg.installing;
-          if(!w)return;
-          w.addEventListener('statechange',function(){
-            if(w.state==='installed'&&navigator.serviceWorker.controller){
-              try{ w.postMessage({type:'SKIP_WAITING'}); }catch(e){}
-            }
-          });
-        });
+  /* ===== 版本自更新：不依赖 Service Worker 缓存 =====
+     App 是 WebView 壳，旧 SW 会长期保留旧资源。这里每次启动都用 no-store 拉一个
+     极小的 version.json（永不被缓存），发现版本不一致就清空全部缓存并硬刷新一次。 */
+  window.__PH_BUILD__ = 'ph-1793805641';
+  (function(){
+    var KEY='ph-build-seen';
+    var reloading=false;
+    function hardReload(){
+      if(reloading)return; reloading=true;
+      try{ sessionStorage.setItem('ph-reloading','1'); }catch(e){}
+      Promise.all([
+        ('caches' in window)? caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); }) : Promise.resolve(),
+        ('serviceWorker' in navigator)? navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); }) : Promise.resolve()
+      ]).then(function(){ location.reload(); }).catch(function(){ location.reload(); });
+    }
+    // 启动时检查版本
+    fetch('./version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok? r.text():''; })
+      .then(function(txt){
+        if(!txt)return;
+        var v=(JSON.parse(txt)||{}).build||'';
+        var seen=localStorage.getItem(KEY)||'';
+        if(v && v!==seen){
+          localStorage.setItem(KEY,v);
+          if(seen) hardReload();     // 只在「之前来过且版本变了」时刷新，首次不影响
+        }
       }).catch(function(){});
-      var reloaded=false;
-      navigator.serviceWorker.addEventListener('controllerchange',function(){
-        if(reloaded)return; reloaded=true; location.reload();
-      });
-    });
-  }
+    if('serviceWorker' in navigator && location.protocol==='https:'){
+      navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(function(){});
+    }
+  })();
 </script>
 </body>
 </html>
