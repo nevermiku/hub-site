@@ -1,9 +1,9 @@
 {
   "appid": "__UNI__PROJECTHUB",
   "name": "项目中枢",
-  "version": "1.2.0",
-  "versionCode": "120",
+  "version": "1.2.1",
+  "versionCode": "121",
   "wgtUrl": "https://nevermiku.github.io/hub-site/hub-app/projecthub.wgt",
-  "md5": "643a6309c94d89349569627842c29293",
-  "note": "1.2.0 桐人男声语音/真人化桌宠/纹理压缩/自动更新"
+  "md5": "a202137ef269f417dd42ee53a72730c4",
+  "note": "1.2.1 修复LINK START无声/桌宠全屏自由活动/语音包选择器/底部导航6项/模型预取加速"
 }
