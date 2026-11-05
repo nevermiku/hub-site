@@ -5578,7 +5578,7 @@ drawV4=function(g){
    ============================================================ */
 async function fetchImgV6(k,url){
   const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-  const to=setTimeout(()=>{try{ctrl&&ctrl.abort()}catch(e){}},9000);
+  const to=setTimeout(()=>{try{ctrl&&ctrl.abort()}catch(e){}},18000);
   try{
     const opt=ctrl?{signal:ctrl.signal,cache:'force-cache'}:{cache:'force-cache'};
     const r=await fetch(url+'?v=6',opt);
@@ -5622,8 +5622,17 @@ loadArt=function(){
     // 1) 关键两张：背景 + 当前职业，串行，约 2 秒即可进入游戏
     for(const it of ordered.slice(0,2))await runOne(it);
     if(!ART.ready)finishLoad();
-    // 2) 其余原画后台逐张补齐，不阻塞操作
-    for(const it of ordered)await runOne(it);
+    // 2) 其余原画并发 2 后台补齐（fetch 可中止，不会耗尽连接池）
+    const rest=ordered.filter(it=>!processed[it[0]]);
+    let idx=0;
+    const worker=async()=>{while(idx<rest.length){const it=rest[idx++];await runOne(it)}};
+    await Promise.all([worker(),worker()]);
+    // 3) 慢网失败项最后再补一轮，不重复计入进度
+    for(const it of ordered){
+      if(ART.img[it[0]])continue;
+      const ok=await fetchImgV6(it[0],it[1]);
+      if(ok)ART.fail=ART.fail.filter(x=>x!==it[0]);
+    }
   })();
   setTimeout(()=>{if(!ART.ready)finishLoad()},9000);
 };
