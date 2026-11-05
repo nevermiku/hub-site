@@ -5571,6 +5571,57 @@ drawV4=function(g){
   if(typeof drawChargeV6==='function')drawChargeV6(g);
 };
 
+/* ============================================================
+   V6-G · 弱网友好：低并发优先队列加载（避免 35 张原画同时抢连接
+   导致背景/Boss 大文件被饿死，线上首屏出现纯色兜底）
+   ============================================================ */
+function loadOneV6(item,done,retry){
+  const k=item[0],url=item[1];
+  if(ART.img[k]){done(true);return}
+  const im=new Image();
+  let settled=false,to=0;
+  const fin=(ok)=>{
+    if(settled)return;settled=true;clearTimeout(to);
+    const good=!!(ok&&im.width);
+    if(good)ART.img[k]=im;
+    done(good);
+  };
+  im.onload=()=>fin(true);
+  im.onerror=()=>fin(false);
+  to=setTimeout(()=>{im.onload=null;im.onerror=null;fin(false)},14000);
+  try{im.src=url+'?v=6'+(retry?'&r=1':'')}catch(e){fin(false)}
+}
+loadArt=function(){
+  ART.total=ART.list.length;ART.loaded=0;ART.fail=[];
+  const f0=(typeof SAVE!=='undefined'&&SAVE.best)||1;
+  const needBg='bg_'+(SCENE_MAP[themeKeyV5(f0)]||'plain');
+  const needCls='class_'+((typeof SAVE!=='undefined'&&SAVE.cls)||'swordsman');
+  const pri=[needBg,needCls];
+  MOB_IDS.forEach(k=>pri.push('mob_'+k));
+  BOSS_IDS.forEach(k=>pri.push('boss_'+k));
+  const seen={},ordered=[];
+  pri.forEach(k=>{if(seen[k])return;seen[k]=1;const it=ART.list.find(x=>x[0]===k);if(it)ordered.push(it)});
+  ART.list.forEach(it=>{if(!seen[it[0]]){seen[it[0]]=1;ordered.push(it)}});
+  ART.queue=ordered.slice();ART.active=0;ART.pending=ART.pending||{};
+  const critical=new Set([needBg,needCls]);
+  const pump=()=>{
+    while(ART.active<4&&ART.queue.length){
+      const it=ART.queue.shift();ART.active++;
+      const run=(retry)=>loadOneV6(it,ok=>{
+        ART.active--;
+        if(!ok&&!retry){ART.active++;run(true);return}   // 单图失败自动重试一次
+        ART.loaded++;if(!ok)ART.fail.push(it[0]);
+        critical.delete(it[0]);
+        loadTick();
+        if(critical.size===0&&!ART.ready)finishLoad();
+        pump();
+      },retry);
+      run(false);
+    }
+  };
+  pump();
+  setTimeout(()=>{if(!ART.ready)finishLoad()},7000);
+};
 /* ===================== V6 END ===================== */
 initInputV5();
 loadArt();
