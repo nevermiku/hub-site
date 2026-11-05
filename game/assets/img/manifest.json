@@ -39,6 +39,21 @@
    "f": "assets/img/class_knight.webp",
    "w": 479,
    "h": 720
+  },
+  "blacksmith": {
+   "f": "assets/img/class_blacksmith.webp",
+   "w": 415,
+   "h": 720
+  },
+  "alchemist": {
+   "f": "assets/img/class_alchemist.webp",
+   "w": 460,
+   "h": 720
+  },
+  "merchant": {
+   "f": "assets/img/class_merchant.webp",
+   "w": 362,
+   "h": 720
   }
  },
  "mobs": {

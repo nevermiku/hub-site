@@ -1,7 +1,7 @@
 {
   "name": "刀域突围 · 百层浮游城",
   "short_name": "刀域突围",
-  "description": "原创原画 MMO 动作 RPG：8 职业自由转职 · 100 层 100 名层主 · 全屏双侧操控 · 格挡弹反 · CloudBase 真联机",
+  "description": "原创原画 MMO 动作 RPG：11 职业自由转职（含锻造/炼金/行商生活职业）· 职业专属技能与音效 · 100 层 100 名层主 · 推门过关与层主吐息演出 · 地面透视与前景生态 · 全屏双侧操控 · CloudBase 真联机",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

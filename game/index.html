@@ -1642,15 +1642,20 @@ function makeMob(id,x,y,small){
 function spawnMob(){
   const g=G;if(g.mobs.length>=Math.min(16,6+Math.floor(g.floor/8)))return;
   const t=pick(mobPool(g.floor));
+  // V6：魔物只在"地面带"生成（地平线以下），避免立绘飘在天空、压住 HUD
+  const top=H*.42,bot=H*.85,band=bot-top;
   let x,y,tries=0;
   do{
     const side=rnd(4);
-    if(side===0){x=rand(56,Math.max(57,W-56));y=108}else if(side===1){x=W-54;y=rand(96,Math.max(97,H-152))}
-    else if(side===2){x=rand(56,Math.max(57,W-56));y=H-142}else{x=54;y=rand(96,Math.max(97,H-152))}
+    if(side===0){x=rand(48,Math.max(49,W-48));y=rand(top,top+band*.3)}
+    else if(side===1){x=W-46;y=rand(top,bot)}
+    else if(side===2){x=rand(48,Math.max(49,W-48));y=rand(bot-band*.22,bot)}
+    else{x=46;y=rand(top,bot)}
     tries++;
-  }while(dist(x,y,g.px,g.py)<170&&tries<12);
+  }while(dist(x,y,g.px,g.py)<150&&tries<12);
   g.mobs.push(makeMob(t.id,x,y));
-  if(t.ai==='swarm')for(let i=0;i<3;i++)g.mobs.push(makeMob(t.id,x+rand(-40,40),y+rand(-40,40)));
+  if(t.ai==='swarm')for(let i=0;i<3;i++)g.mobs.push(makeMob(t.id,
+    clamp(x+rand(-40,40),20,W-20),clamp(y+rand(-40,40),top,bot)));
 }
 function updateMobs(dt){
   const g=G;
@@ -2029,7 +2034,8 @@ function update(dt){
     g.px+=v.x*sp*dt;g.py+=v.y*sp*dt;
     if(v.x||v.y)g.facing=Math.atan2(v.y,v.x);
   }
-  g.px=clamp(g.px,22,W-22);g.py=clamp(g.py,22,H-22);
+  // V6：角色只在地面平面内行走（不再能飘到天空/HUD 区）
+  g.px=clamp(g.px,20,W-20);g.py=clamp(g.py,H*.30,H*.88);
   // 自动攻击
   g.atkCd-=dt;
   if(g.atkCd<=0){
@@ -3576,7 +3582,7 @@ function spriteFighterV5(x,y,r,c,ang,opt){
   const img=ART.img['class_'+cls];
   if(!img)return false;
   const A=opt.anim||{};
-  const h=Math.max(r*7.0,94),foot=r*1.02;
+  const h=Math.max(r*7.8,106),foot=r*1.02;
   spriteDrawV5(img,x,y,h,foot,{
     anim:A,flip:Math.cos(ang)<0,c:c||'#7fe0ff',
     swing:A.swingT>0?A.swingT/.24:0,roll:A.roll||0,
@@ -3910,6 +3916,1662 @@ function ambienceV5(f){
 if(typeof drawPeersV4==='function'){/* 已在 V4-D 中通过 opt.cls 接入 */}
 
 /* 启动 */
+/* ===================== V6 START ===================== */
+/* ============================================================
+   V6-A · 11 职业体系 / 职业专属技能 / 全职业通用基础技能
+   ============================================================ */
+/* 生活职业：不是换皮，而是各自拥有完全不同的玩法循环 */
+const LIFE_CLASSES=[
+ {id:'blacksmith',n:'锻造师',role:'生活 · 锻造',c:'#ffb070',hpM:1.34,atkM:1.06,spdM:.86,rateM:.74,range:118,crit:.10,style:'hammer',start:'hammerStrike',craft:'forge',
+  desc:'不靠剑，靠炉火。打怪采矿石 → 控温锻打 → 打出永久强化装备。采集量翻倍，锻出的武器可反哺任何战斗职业。'},
+ {id:'alchemist', n:'炼金术师',role:'生活 · 调合',c:'#c9b0ff',hpM:.92,atkM:1.04,spdM:1.0,rateM:.92,range:196,crit:.12,style:'flask',start:'flaskThrow',craft:'alchemy',
+  desc:'一层一生态，材料各异。三种材料不同配比调出完全不同的药剂，配方需要自己试错发现，失败的配比也会留下记录。'},
+ {id:'merchant',  n:'行商人',role:'生活 · 交易',c:'#ffd98a',hpM:1.06,atkM:.96,spdM:1.12,rateM:1.02,range:146,crit:.16,style:'coin',start:'coinToss',craft:'trade',
+  desc:'每层物价都不同。低买高卖、把锻造与炼金的产物卖给 NPC，靠行情赚钱再买补给，是完全不靠打架的通关路线。'},
+];
+LIFE_CLASSES.forEach(c=>{
+  CLASSES.push(c);CLS_BY_ID[c.id]=c;CLASS_IDS.push(c.id);
+  ART.list.push(['class_'+c.id,'assets/img/class_'+c.id+'.webp']);
+});
+
+/* 现有技能的职业归属：common = 全职业通用基础 */
+const SKILL_CLS={
+ slash:'swordsman',spin:'swordsman',dash:'common',vertical:'swordsman',horizontal:'swordsman',
+ quad:'swordsman',sonic:'lancer',flame:'mage',spiral:'lancer',
+ double:'dual',starburst:'dual',eclipse:'dual',dualfan:'dual',
+ heal:'cleric',guard:'knight',volley:'mage',counter:'swordsman',blink:'rogue',judge:'cleric',
+ absolute:'knight',timestop:'mage',memory:'swordsman',exceed:'cleric',sacred:'cleric',
+ linkburst:'common',volleycall:'archer',aegis:'knight'
+};
+function skillOwnerV6(s){if(!s||s.cat==='passive')return 'common';return SKILL_CLS[s.id]||'common'}
+function skillUsableV6(id){
+  const s=SKILL_BY_ID[id];if(!s)return false;
+  const o=skillOwnerV6(s);
+  return o==='common'||o===SAVE.cls;
+}
+function skillOwnerNameV6(id){
+  const o=skillOwnerV6(SKILL_BY_ID[id]);
+  if(o==='common')return '通用';
+  const c=CLS_BY_ID[o];return c?c.n:o;
+}
+
+/* 新增技能：8 战斗职业各 2 个招牌技 + 3 生活职业技能 + 4 个全职业基础技 */
+const V6_SKILLS=[
+ // —— 剑士 ——
+ {id:'eclipseSlash',n:'日蚀斩',sym:'◑',cd:8,sta:26,dmg:3.4,type:'slash',cat:'swordsman',cls:'swordsman',c:'#9fe8ff',fx:'arc',desc:'单手剑自上而下的破防重斩，命中层主必定造成 BREAK。',unlock:null,cost:120},
+ {id:'avalanche',n:'雪崩剑',sym:'❄',cd:11,sta:34,dmg:2.1,type:'aoe',cat:'swordsman',cls:'swordsman',c:'#c9e8ff',fx:'triple',desc:'三连前方斩，逐段扩大范围并击退，末段冰冻。',unlock:{t:'floor',v:6,l:'到达第 6 层'},cost:190},
+ // —— 双刀 ——
+ {id:'dualRush',n:'双刃乱舞',sym:'⚔',cd:9,sta:30,dmg:1.5,type:'slash',cat:'dual',cls:'dual',c:'#ffd0a0',fx:'flurry',desc:'八段高速连斩覆盖周身，每段独立暴击。',unlock:null,cost:150},
+ {id:'crossEdge',n:'十字刃',sym:'╋',cd:7,sta:26,dmg:2.4,type:'aoe',cat:'dual',cls:'dual',c:'#ffe0a0',fx:'cross',desc:'双刃划出十字剑气，交叉点伤害翻倍。',unlock:{t:'boss',v:3,l:'讨伐 3 名层主'},cost:220},
+ // —— 枪术士 ——
+ {id:'pierceLance',n:'贯穿枪',sym:'⇡',cd:8,sta:28,dmg:2.9,type:'slash',cat:'lancer',cls:'lancer',c:'#a8d0ff',fx:'line',desc:'长枪贯穿整条直线，射程覆盖全屏并击退。',unlock:null,cost:140},
+ {id:'sweep',n:'横扫千军',sym:'⌒',cd:9,sta:30,dmg:2.0,type:'aoe',cat:'lancer',cls:'lancer',c:'#b8dcff',fx:'sweep',desc:'大范围横扫击退所有近身魔物并使其眩晕。',unlock:{t:'kill',v:40,l:'累计击杀 40 只魔物'},cost:180},
+ // —— 符文术士 ——
+ {id:'runeBolt',n:'符文·元气弹',sym:'◉',cd:11,sta:38,dmg:4.2,type:'ult',cat:'mage',cls:'mage',c:'#c9b0ff',fx:'spiritbomb',desc:'【招牌】短暂吟唱后凝聚一枚符文元气弹，命中处炸开元素涟漪，范围随蓄力增长。',unlock:null,cost:260},
+ {id:'elementCircle',n:'元素法阵',sym:'✳',cd:13,sta:32,dmg:1.0,type:'aoe',cat:'mage',cls:'mage',c:'#a8e0ff',fx:'ring',desc:'在脚下展开持续 5 秒的元素法阵，阵内魔物持续受创并减速。',unlock:{t:'floor',v:9,l:'到达第 9 层'},cost:230},
+ // —— 弓手 ——
+ {id:'arrowRain',n:'箭雨',sym:'⇣',cd:9,sta:28,dmg:1.3,type:'ranged',cat:'archer',cls:'archer',c:'#9cf0c8',fx:'rain',desc:'五波箭雨覆盖全场，每波落点随机，命中减速。',unlock:null,cost:150},
+ {id:'piercingShot',n:'贯穿箭',sym:'➳',cd:6,sta:22,dmg:2.7,type:'ranged',cat:'archer',cls:'archer',c:'#b8ffe0',fx:'line',desc:'蓄力一箭穿透直线上的所有目标，必定暴击。',unlock:{t:'boss',v:2,l:'讨伐 2 名层主'},cost:190},
+ // —— 圣职者 ——
+ {id:'holyLight',n:'圣光裁决',sym:'✟',cd:10,sta:30,dmg:2.6,type:'aoe',cat:'cleric',cls:'cleric',c:'#ffe0a0',fx:'pillar',desc:'降下圣光柱造成范围伤害，同时回复自身 20% 生命。',unlock:null,cost:170},
+ {id:'blessingAura',n:'祝福光环',sym:'❂',cd:16,sta:28,dmg:0,type:'buff',cat:'cleric',cls:'cleric',c:'#fff0c0',fx:'aura',desc:'8 秒内持续回复生命并减免 25% 伤害。',unlock:{t:'floor',v:7,l:'到达第 7 层'},cost:210},
+ // —— 影刃 ——
+ {id:'shadowStep',n:'影袭',sym:'◈',cd:7,sta:24,dmg:3.0,type:'dash',cat:'rogue',cls:'rogue',c:'#ffd0e0',fx:'backstab',desc:'瞬移到最近目标背后，必定暴击且本次攻击无视护盾。',unlock:null,cost:150},
+ {id:'poisonBlade',n:'淬毒刃',sym:'☠',cd:8,sta:26,dmg:1.7,type:'slash',cat:'rogue',cls:'rogue',c:'#a8e878',fx:'poison',desc:'淬毒短刃划出扇形，命中的魔物持续中毒 6 秒。',unlock:{t:'kill',v:50,l:'累计击杀 50 只魔物'},cost:190},
+ // —— 重铠骑士 ——
+ {id:'shieldBash',n:'盾击',sym:'▣',cd:7,sta:24,dmg:1.9,type:'aoe',cat:'knight',cls:'knight',c:'#ffd98a',fx:'bash',desc:'以盾猛击地面，近身魔物眩晕 2 秒并破防。',unlock:null,cost:130},
+ {id:'earthWall',n:'大地壁垒',sym:'⛨',cd:14,sta:30,dmg:0,type:'buff',cat:'knight',cls:'knight',c:'#ffc890',fx:'wall',desc:'6 秒减伤 65% 并反弹 30% 所受伤害。',unlock:{t:'block',v:10,l:'累计格挡 10 次'},cost:230},
+ // —— 生活职业 ——
+ {id:'hammerStrike',n:'锻锤震击',sym:'⚒',cd:7,sta:26,dmg:2.6,type:'aoe',cat:'blacksmith',cls:'blacksmith',c:'#ffb070',fx:'bash',desc:'铁锤砸地引发震波，范围伤害并眩晕。击杀魔物额外掉落矿石。',unlock:null,cost:0},
+ {id:'flaskThrow',n:'药剂投掷',sym:'⚗',cd:7,sta:24,dmg:2.2,type:'ranged',cat:'alchemist',cls:'alchemist',c:'#c9b0ff',fx:'flask',desc:'投掷随机药剂，爆开范围伤害并附带随机增益/减益。',unlock:null,cost:0},
+ {id:'coinToss',n:'金币风暴',sym:'✦',cd:9,sta:28,dmg:1.8,type:'ult',cat:'merchant',cls:'merchant',c:'#ffd98a',fx:'coin',desc:'撒出金币形成全屏风暴，命中越多掉落金币越多。',unlock:null,cost:0},
+ // —— 全职业通用基础技能（任何职业都能学、都能用）——
+ {id:'firstaid',n:'应急包扎',sym:'✚',cd:12,sta:0,dmg:0,type:'heal',cat:'common',cls:'common',c:'#9cf0a8',fx:'firstaid',desc:'【通用】回复 18% 生命，几乎不消耗资源。',unlock:null,cost:30},
+ {id:'sprint',n:'疾步',sym:'»',cd:9,sta:14,dmg:0,type:'buff',cat:'common',cls:'common',c:'#8fe8ff',fx:'sprint',desc:'【通用】5 秒内移动速度 +55%。',unlock:null,cost:40},
+ {id:'warcry',n:'战吼',sym:'♪',cd:18,sta:20,dmg:0,type:'buff',cat:'common',cls:'common',c:'#ffd98a',fx:'warcry',desc:'【通用】6 秒内自身与队友攻击力 +25%。',unlock:null,cost:70},
+ {id:'smokebomb',n:'烟幕',sym:'☁',cd:20,sta:18,dmg:0,type:'buff',cat:'common',cls:'common',c:'#b0b8d0',fx:'smoke',desc:'【通用】3 秒内所有魔物失去目标并停止行动。',unlock:null,cost:90},
+];
+V6_SKILLS.forEach(s=>{SKILLS.push(s);SKILL_BY_ID[s.id]=s;SKILL_CLS[s.id]=s.cls||'common'});
+const V6_IDS=V6_SKILLS.map(s=>s.id);
+SKILL_CATS.push(['mine','本职'],['common','通用'],['swordsman','剑士'],['dual','双刀'],['lancer','枪术'],['mage','符文'],['archer','弓手'],['cleric','圣职'],['rogue','影刃'],['knight','骑士'],['blacksmith','锻造'],['alchemist','炼金'],['merchant','行商']);
+
+/* 转职时清理不属于当前职业的装备技能 */
+function normalizeSkillsV6(){
+  const c=CLS();let changed=false;
+  for(let i=0;i<4;i++){
+    const id=SAVE.skills[i];
+    if(id&&!skillUsableV6(id)){
+      // 优先用本职起始技能补位，其余槽位换成已学会的通用技能
+      SAVE.skills[i]=(i===0?c.start:(V6_SKILLS.find(s=>s.cls==='common'&&SAVE.learned[s.id])||{}).id)||null;
+      changed=true;
+    }
+  }
+  if(!SAVE.learned[c.start])SAVE.learned[c.start]=1;
+  if(!SAVE.skills[0])SAVE.skills[0]=c.start;
+  if(changed){saveGame();if(typeof buildSkillBar==='function')buildSkillBar()}
+}
+const _applyClassV5Base=applyClassV5;
+applyClassV5=function(){_applyClassV5Base();normalizeSkillsV6()};
+const _setClassV5Base=setClassV5;
+setClassV5=function(id){
+  _setClassV5Base(id);normalizeSkillsV6();
+  if(typeof sfxClassV6==='function')sfxClassV6('change');
+  if(typeof toast==='function'){const c=CLS();toast('已转职 · '+c.n+(c.craft?' · 工坊已开放':''))}
+};
+
+/* 技能栏：职业色 + 不可用灰显 */
+const _buildSkillBarBase=buildSkillBar;
+buildSkillBar=function(){
+  _buildSkillBarBase();
+  const box=$('skills');if(!box)return;
+  const col=CLS().c;
+  [...box.children].forEach((el,i)=>{
+    const id=SAVE.skills[i];
+    if(id&&SKILL_BY_ID[id]){
+      const s=SKILL_BY_ID[id];
+      el.style.borderColor=rgba(s.c||col,.6);
+      el.querySelector('.sym').style.color=s.c||col;
+      if(!skillUsableV6(id)){el.classList.add('locked');el.title='需转职为 '+skillOwnerNameV6(id)}
+      else el.classList.remove('locked');
+    }
+    el.title=(el.title||'')+' · '+(id?skillOwnerNameV6(id):'空');
+  });
+};
+
+/* 技能树：按职业过滤 + 分组 */
+let skillTabV6='mine';
+function skillPanelHTMLV6(){
+  const mine=CLS();
+  let h=`<h3>技能点 <span class="gold">${SAVE.points}</span> · 金币 <span class="gold">${Math.floor(SAVE.gold)}</span></h3>`;
+  h+=`<div class="desc dim">当前职业 <b style="color:${mine.c}">${mine.n}</b> · 只能装备「本职技能」与「通用基础技能」。转职后已学会的技能全部保留，随时可切回来。</div>`;
+  const cats=[['mine','★ 本职'],['common','通用基础'],['all','全部'],['passive','被动天赋']];
+  h+=`<div class="tabs">${cats.map(c=>`<div class="tab ${(skillTabV6||'mine')===c[0]?'on':''}" data-scat6="${c[0]}">${c[1]}</div>`).join('')}</div>`;
+  let list;
+  if(skillTabV6==='mine')list=SKILLS.filter(s=>s.cat!=='passive'&&(skillOwnerV6(s)==='common'||skillOwnerV6(s)===mine.id));
+  else if(skillTabV6==='common')list=SKILLS.filter(s=>s.cat==='common');
+  else if(skillTabV6==='passive')list=SKILLS.filter(s=>s.cat==='passive');
+  else list=SKILLS.filter(s=>s.cat!=='passive');
+  if(skillTabV6==='all'||skillTabV6==='passive'){
+    h+=`<div class="item"><div class="hd"><span class="nm" style="color:#ffd98a">⧉ 队友技强化</span><span class="cost">LV ${SAVE.mateSkillLv||1} / 6</span></div>
+      <div class="sub">提升出战队友主动技的威力。</div>
+      <button class="btn sec sm" data-mateup="1" ${SAVE.points<1||(SAVE.mateSkillLv||1)>=6?'disabled':''}>升级（1 技能点 + 80 金币）</button></div>`;
+  }
+  list.forEach(s=>{
+    const owner=skillOwnerV6(s),usable=skillUsableV6(s.id);
+    const tag=owner==='common'?'<span class="tag" style="color:#9cf0c8">通用</span>':
+      `<span class="tag" style="color:${usable?'#ffd257':'#7f93aa'}">${skillOwnerNameV6(s.id)}专属${usable?'':' · 需转职'}</span>`;
+    if(s.cat==='passive'){
+      const lv=SAVE.passive[s.id]||0,cost=s.cost*(lv+1);
+      h+=`<div class="item ${lv?'':'locked'}"><div class="hd"><span class="nm" style="color:${s.c}">${s.sym} ${s.n} <span class="gold">LV ${lv}/${s.max}</span></span><span class="cost">${lv>=s.max?'已满级':cost+' 金币'}</span></div>
+        <div class="sub">${s.desc}</div>${lv<s.max?`<button class="btn sec sm" data-passive="${s.id}" ${SAVE.points<1||SAVE.gold<cost?'disabled':''}>升级（1 技能点 + ${cost} 金币）</button>`:''}</div>`;
+      return;
+    }
+    const learned=!!SAVE.learned[s.id],ok=unlockOK(s),eq=SAVE.skills.indexOf(s.id);
+    h+=`<div class="item ${learned?'':'locked'} ${usable?'':'locked'}"><div class="hd"><span class="nm" style="color:${s.c}">${s.sym} ${s.n}</span><span class="cost">${learned?'已学会':s.cost+' 金币'}</span></div>
+      <div class="sub">${s.desc}</div><div>${tag}<span class="tag">CD ${s.cd}s</span><span class="tag">耐力 ${s.sta}</span>${s.unlock?`<span class="tag" style="color:${ok?'#9cf0a8':'#ff9a9a'}">${ok?'✓ ':'✗ '}${s.unlock.l}</span>`:''}</div>
+      ${!usable?`<div class="dim" style="font-size:10px;margin-top:6px">转职为「${skillOwnerNameV6(s.id)}」后可装备</div>`:
+        (learned?`<div style="margin-top:7px;display:flex;gap:5px;align-items:center"><span class="dim" style="font-size:10px">装备</span>${[0,1,2,3].map(i=>`<button class="miniBtn" data-eq="${i}" data-id="${s.id}" style="${eq===i?'background:rgba(255,210,120,.35);border-color:#ffd98a':''}">${i+1}</button>`).join('')}${eq>=0?'<span class="gold" style="font-size:10px;margin-left:auto">出战中</span>':''}</div>`:
+          (ok?`<button class="btn sec sm" data-learn="${s.id}" ${SAVE.points<1||SAVE.gold<s.cost?'disabled':''}>学习（${s.cost} 金币 + 1 技能点）</button>`:`<div class="dim" style="font-size:10px;margin-top:6px">条件未达成</div>`))}</div>`;
+  });
+  return h;
+}
+/* 覆写技能树渲染（面板 / 营地共用） */
+skillPanelHTML=function(){return skillPanelHTMLV6()};
+wireSkillUI=function(root,refresh){
+  root.querySelectorAll('[data-scat6]').forEach(t=>t.onclick=()=>{skillTabV6=t.dataset.scat6;refresh()});
+  root.querySelectorAll('[data-learn]').forEach(b=>b.onclick=()=>{
+    const s=SKILL_BY_ID[b.dataset.learn];
+    if(!skillUsableV6(s.id)){toast('该技能属于「'+skillOwnerNameV6(s.id)+'」');return}
+    if(SAVE.points<1||SAVE.gold<s.cost){toast('资源不足');return}
+    SAVE.points--;SAVE.gold-=s.cost;SAVE.learned[s.id]=1;
+    const e=SAVE.skills.findIndex(x=>!x);if(e>=0)SAVE.skills[e]=s.id;else SAVE.skills[0]=s.id;
+    saveGame();buildSkillBar();sfx('levelup');toast('学会 '+s.n);refresh();
+  });
+  root.querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.eq,id=b.dataset.id,old=SAVE.skills.indexOf(id);
+    if(!skillUsableV6(id)){toast('需转职为「'+skillOwnerNameV6(id)+'」');return}
+    if(old>=0)SAVE.skills[old]=SAVE.skills[i];SAVE.skills[i]=id;
+    saveGame();buildSkillBar();refresh();toast('已装备到槽位 '+(i+1));
+  });
+  root.querySelectorAll('[data-passive]').forEach(b=>b.onclick=()=>{
+    const s=SKILL_BY_ID[b.dataset.passive],lv=SAVE.passive[s.id]||0,cost=s.cost*(lv+1);
+    if(lv>=s.max||SAVE.points<1||SAVE.gold<cost){toast('资源不足或已满级');return}
+    SAVE.points--;SAVE.gold-=cost;SAVE.passive[s.id]=lv+1;
+    saveGame();syncPB();applyPassiveV4();sfx('levelup');toast(s.n+' LV '+(lv+1));refresh();
+  });
+  root.querySelectorAll('[data-mateup]').forEach(b=>b.onclick=()=>{
+    if(SAVE.points<1||SAVE.gold<80||(SAVE.mateSkillLv||1)>=6){toast('资源不足或已满级');return}
+    SAVE.points--;SAVE.gold-=80;SAVE.mateSkillLv=(SAVE.mateSkillLv||1)+1;
+    saveGame();sfx('levelup');toast('队友技 LV '+SAVE.mateSkillLv);refresh();
+  });
+};
+renderSkillPanelV4=function(body,tabs){tabs.innerHTML='';body.innerHTML=skillPanelHTMLV6();wireSkillUI(body,()=>renderSkillPanelV4(body,tabs))};
+skillTreeHTML=function(){return skillPanelHTMLV6()};
+wireSkillTree=function(root){wireSkillUI(root,()=>renderCamp())};
+
+/* ============================================================
+   V6-B · 职业专属音效 / 怪物猎人式打击感
+   ============================================================ */
+/* 带扫频的噪声：真正的"咻——"破风，而不是固定频段白噪 */
+function noiseSweepV6(dur,vol,f0,f1,q,delay){
+  const A=Audio_.ctx;if(!A||!SAVE.settings.sfx)return;
+  const t=A.currentTime+(delay||0);
+  const n=Math.floor(A.sampleRate*dur),buf=A.createBuffer(1,n,A.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);
+  const src=A.createBufferSource();src.buffer=buf;
+  const f=A.createBiquadFilter();f.type='bandpass';f.Q.value=q||1;
+  f.frequency.setValueAtTime(Math.max(40,f0),t);
+  f.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);
+  const g=A.createGain();g.gain.setValueAtTime(vol,t);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  src.connect(f);f.connect(g);g.connect(Audio_.sfxGain);src.start(t);
+}
+function chordV6(freqs,dur,vol,type,delay){
+  freqs.forEach((fr,i)=>tone(fr,dur,type||'triangle',vol,null,(delay||0)+i*.012));
+}
+/* 每个职业/武器质地一套完全不同的音色 */
+function sfxStyleV6(style,act,opt){
+  if(!Audio_.ctx||!SAVE.settings.sfx)return;
+  opt=opt||{};
+  const crit=!!opt.crit;
+  if(act==='hit'||act==='crit'){
+    // 命中质地层：金属 / 能量 / 钝击 / 弦 / 圣铃 / 玻璃
+    switch(style){
+      case 'slash':case 'dual':case 'dagger':
+        tone(crit?1450:980,.12,'triangle',crit?.12:.07,420);break;
+      case 'pierce':case 'arrow':
+        noiseSweepV6(.09,crit?.1:.06,3200,700,2);break;
+      case 'magic':case 'flask':
+        tone(crit?660:440,.22,'sine',.09,crit?1320:880);tone(990,.16,'sine',.05,1760,.02);break;
+      case 'holy':chordV6([784,1175],.16,.05,'sine');break;
+      case 'heavy':case 'hammer':
+        tone(120,.22,'square',crit?.18:.11,55);noise(.14,.12,260,.7);break;
+      case 'coin':tone(1800,.1,'sine',.07,2400);break;
+      default:tone(420,.1,'sine',.05,210);
+    }
+    return;
+  }
+  if(act==='change'){chordV6([523,659,784],.3,.08,'sine');return}
+  if(act==='collect'){tone(880,.1,'sine',.08,1320);tone(1320,.09,'sine',.05,1760,.06);return}
+  if(act==='forge'){tone(1180,.42,'triangle',.2,360);tone(180,.3,'square',.14,70);noise(.25,.2,760,1);tone(1560,.3,'sine',.06,780,.05);return}
+  if(act==='alchemy'){[0,1,2,3].forEach(i=>tone(300+i*90,.13,'sine',.07,520+i*130,i*.075));noise(.18,.09,3600,2,.1);return}
+  if(act==='trade'){tone(1560,.16,'sine',.1,2340);tone(2100,.14,'sine',.08,2800,.055);tone(1170,.2,'triangle',.05,1560,.1);return}
+  if(act==='gate'){tone(58,1.5,'sawtooth',.2,34);noise(1.2,.1,180,.5);chordV6([196,294,392],1.1,.05,'sine',.35);return}
+  if(act==='bossfire'){tone(72,1.0,'sawtooth',.18,40);noiseSweepV6(.9,.18,300,1600,.7);tone(110,.8,'square',.09,55);return}
+  if(act==='walk'){noise(.035,.018,420,.8);return}
+  if(act==='cast'){
+    switch(style){
+      case 'magic':case 'flask':
+        tone(160,.34,'sawtooth',.12,520);tone(320,.3,'sine',.08,880,.05);
+        chordV6([660,880,1100],.3,.045,'sine',.1);break;
+      case 'holy':chordV6([523,659,784,1047],.42,.065,'sine');break;
+      case 'heavy':case 'hammer':tone(90,.2,'square',.13,55);noise(.12,.1,420,.8);break;
+      default:tone(380,.18,'sawtooth',.09,760);noise(.1,.05,2000,1.4);
+    }
+    return;
+  }
+  // swing：挥击/普攻
+  switch(style){
+    case 'slash':                       // 黑衣剑士：清亮金属破风 + 剑鸣
+      noiseSweepV6(.15,crit?.16:.12,760,3400,1.1);tone(2100,.11,'triangle',.07,880);tone(160,.07,'sine',.05,90);break;
+    case 'dual':                        // 双刀：两下错开的短促破风
+      noiseSweepV6(.09,.1,900,3000,1.4);noiseSweepV6(.08,.085,1100,3400,1.5,.07);
+      tone(2400,.08,'triangle',.05,1000,.06);break;
+    case 'dagger':                      // 影刃：极短"嚓"
+      noiseSweepV6(.065,.095,2600,1100,2.2);break;
+    case 'pierce':                      // 长枪：高频破空 + 突刺闷响
+      noiseSweepV6(.12,.12,2600,820,2.0);tone(190,.09,'square',.07,80);break;
+    case 'arrow':                       // 弓：拨弦 + 羽箭破空
+      tone(330,.09,'triangle',.11,170);noiseSweepV6(.19,.075,3000,1200,1.8,.03);break;
+    case 'magic':                       // 符文：能量蓄放（元气弹前奏）
+      tone(180,.16,'sawtooth',.09,460);tone(720,.14,'sine',.06,1200,.04);
+      noiseSweepV6(.2,.055,1200,3200,1.2,.02);break;
+    case 'flask':                       // 炼金：液体咕嘟 + 玻璃
+      tone(260,.1,'sine',.07,520);tone(420,.09,'sine',.05,760,.06);noise(.09,.05,3800,2);break;
+    case 'holy':                        // 圣职：圣铃与合唱
+      chordV6([523,659,784],.24,.06,'sine');tone(1568,.18,'sine',.04,2093,.05);break;
+    case 'heavy':                       // 重铠：沉重风压 + 金属摩擦
+      noiseSweepV6(.2,.13,320,1500,.8);tone(110,.18,'sawtooth',.15,50);tone(620,.13,'triangle',.05,240);break;
+    case 'hammer':                      // 铁匠：铁锤砸砧
+      noiseSweepV6(.13,.1,500,1800,1);tone(1240,.34,'triangle',.17,380);
+      tone(190,.26,'square',.12,72);noise(.2,.16,880,1);break;
+    case 'coin':                        // 商人：金币叮当
+      tone(1560,.13,'sine',.09,2340);tone(2080,.11,'sine',.07,2800,.05);
+      noiseSweepV6(.1,.045,2600,1400,2);break;
+    default:noiseSweepV6(.12,.1,800,2600,1.2);
+  }
+}
+function sfxClassV6(act,opt){try{sfxStyleV6(CLS().style,act||'swing',opt)}catch(e){}}
+/* 覆写基础音效：所有挥击/命中都带当前职业音色 */
+SFX.swing=function(){sfxClassV6('swing')};
+SFX.hit=function(){tone(180,.09,'square',.1,80);noise(.06,.08,800,1);sfxClassV6('hit')};
+SFX.crit=function(){tone(880,.13,'triangle',.17,1760);tone(1320,.1,'sine',.1,2640,.03);noise(.08,.1,3000,2);sfxClassV6('crit',{crit:true})};
+SFX.skill=function(){sfxClassV6('cast');tone(420,.22,'sawtooth',.1,840)};
+const _ultBase=SFX.ult;
+SFX.ult=function(){_ultBase();sfxClassV6('cast')};
+
+/* 方向性命中火花：怪猎式"血花沿刀路喷出"，而非随机四散 */
+function impactV6(x,y,ang,crit,style){
+  const g=G;if(!g)return;
+  const col=crit?'#ffe9a0':(CLS().c||'#ffffff');
+  g.parts=g.parts||[];
+  const n=crit?16:9;
+  for(let i=0;i<n;i++){
+    const a=ang+rand(-.85,.85),sp=rand(90,crit?340:230);
+    g.parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-30,c:i%3===0?'#ffffff':col,t:rand(.16,.42),max:.42,sz:crit?3:2});
+  }
+  if(crit&&g.parts.length<300){
+    for(let i=0;i<10;i++){const a=rand(0,TAU),sp=rand(40,190);
+      g.parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:'#fff3c0',t:.3,max:.3,sz:2})}
+  }
+  if(!g.hitFx)g.hitFx=[];
+  g.hitFx.push({t:crit?.24:.12,max:crit?.24:.12,x,y,r:crit?62:32,c:col,crit,ang:ang,style:style||CLS().style});
+}
+/* 覆写命中反馈：按武器重量给不同顿帧 */
+const _onHitV4Base=onHitV4;
+onHitV4=function(crit,x,y){
+  _onHitV4Base(crit,x,y);
+  const g=G,st=CLS().style;
+  const heavy=(st==='heavy'||st==='hammer'||st==='magic');
+  g.hitStop=Math.max(g.hitStop,crit?(heavy?.12:.085):(heavy?.055:.032));
+  g.shake=Math.max(g.shake,crit?(heavy?9:6):(heavy?4:2));
+  impactV6(x,y,g.facing,crit,st);
+  if(typeof sfxStyleV6==='function')sfxStyleV6(st,crit?'crit':'hit',{crit});
+};
+/* 命中特效绘制：十字冲击环 + 方向性放射线 */
+function drawImpactV6(g){
+  if(!g.hitFx)return;
+  for(const f of g.hitFx){
+    if(f.ang===undefined)continue;
+    const q=clamp(f.t/f.max,0,1),a=f.ang;
+    ctx.save();ctx.translate(f.x,f.y);ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=rgba(f.c,q*.9);ctx.lineWidth=(f.crit?3.4:2)*q;
+    for(let i=-2;i<=2;i++){
+      const aa=a+i*.28,len=f.r*(.6+Math.random()*.5)*(1-q*.25);
+      ctx.beginPath();ctx.moveTo(Math.cos(aa)*f.r*.18,Math.sin(aa)*f.r*.18);
+      ctx.lineTo(Math.cos(aa)*len,Math.sin(aa)*len);ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+/* 伤害数字：弹出缩放 + 描边，替代平铺文字 */
+const _floatTextBase=floatText;
+floatText=function(x,y,v,c,crit){
+  const g=G;if(!g)return;
+  g.dmgs.push({x,y,v:String(v),c,crit:!!crit,t:.72,max:.72});
+};
+function drawDamageV6(g){
+  for(const d of g.dmgs){
+    const p=clamp(d.t/d.max,0,1);
+    const pop=p>.82?(1-(p-.82)/.18)*.55:1;   // 刚出现时放大一下
+    const sc=(d.crit?1.35:1)*(.85+.15*p)*pop;
+    ctx.save();ctx.translate(d.x,d.y-(1-p)*26);
+    ctx.scale(sc,sc);ctx.globalAlpha=clamp(p*1.6,0,1);
+    ctx.font=(d.crit?'900 17px':'700 12px')+' sans-serif';
+    ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(3,7,14,.85)';
+    ctx.strokeText(d.v,0,0);ctx.fillStyle=d.c;ctx.fillText(d.v,0,0);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+}
+/* 生活职业普攻形态 */
+const _classAttackFxV5Base=classAttackFxV5;
+classAttackFxV5=function(g,t,dmg,crit){
+  const c=CLS();
+  if(c.style==='hammer'||c.style==='flask'||c.style==='coin'){
+    const s=g.slashes[g.slashes.length-1];if(s){s.c=c.c;s.style=c.style;s.crit=crit}
+    g.skillFx.push({t:.3,max:.3,kind:'nova',x:t.x,y:t.y,r:c.style==='hammer'?78:52,c:c.c});
+    for(let i=0;i<(crit?8:5);i++)burst(t.x+rand(-16,16),t.y+rand(-16,16),c.c,1);
+    if(g.anim)g.anim.swingT=.24;
+    if(c.style==='hammer'){
+      g.mobs.forEach(m=>{if(m!==t&&!m.dead&&dist(m.x,m.y,t.x,t.y)<96)hurtMob(m,dmg*.4,false)});
+      g.shake=Math.max(g.shake,3);
+    }else if(c.style==='flask'){
+      g.mobs.forEach(m=>{if(m!==t&&!m.dead&&dist(m.x,m.y,t.x,t.y)<72)hurtMob(m,dmg*.38,false)});
+    }else{
+      g.gold+=crit?3:1;g.mobs.forEach(m=>{if(m!==t&&!m.dead&&dist(m.x,m.y,t.x,t.y)<64)hurtMob(m,dmg*.3,false)});
+    }
+    return;
+  }
+  _classAttackFxV5Base(g,t,dmg,crit);
+};
+
+/* ============================================================
+   V6-C · 落地行走 / 地面透视 / 实体与场景同图层 / 原神式景深
+   ============================================================ */
+/* 透视缩放：越靠画面下方越近越大，实体不再"浮"在背景之上 */
+function depthScaleV6(y){
+  const t=clamp((y-H*.30)/(H*.72),0,1);
+  return .74+t*.46;
+}
+function withDepthV6(x,y,fn){
+  const s=depthScaleV6(y);
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.translate(-x,-y);
+  fn();ctx.restore();
+}
+/* 立绘条带行走：把整张立绘按水平切片，越靠下摆幅越大，模拟迈步 */
+function drawWalkStripsV6(img,w,hh,t,run){
+  const N=14,sh=img.height/N,dh=hh/N+1;
+  for(let i=0;i<N;i++){
+    const k=i/(N-1);
+    const dx=Math.sin(t*11+i*.42)*run*hh*.052*Math.pow(k,1.6);
+    ctx.drawImage(img,0,i*sh,img.width,sh+1,-w/2+dx,-hh+i*dh,w,dh);
+  }
+}
+/* 覆写立绘绘制：真正的脚步 / 接地阴影 / 扬尘 / 步态起伏 */
+spriteDrawV5=function(img,cx,cy,h,footY,opt){
+  if(!img||!img.width)return false;
+  opt=opt||{};
+  const w=h*img.width/img.height,A=opt.anim||{},t=A.t||0,run=A.run||0;
+  const g=(typeof G!=='undefined'&&G)||null;
+  ctx.save();
+  ctx.translate(cx,cy+footY);
+  // 接地阴影随步态轻微伸缩，角色始终"踩"在地面上
+  const step=Math.abs(Math.sin(t*11));
+  const sw=w*.42*(1+step*run*.1),sh2=h*.048*(1-step*run*.14);
+  ctx.fillStyle='rgba(0,0,0,.5)';
+  ctx.beginPath();ctx.ellipse(0,0,sw,sh2,0,0,TAU);ctx.fill();
+  // 柔和接触阴影（让脚与地面融在一起，而不是悬浮贴图）
+  const cg=ctx.createRadialGradient(0,0,0,0,0,sw*1.35);
+  cg.addColorStop(0,'rgba(0,0,0,.34)');cg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(0,0,sw*1.35,sh2*2.4,0,0,TAU);ctx.fill();
+  if(opt.c){
+    const gl=ctx.createRadialGradient(0,0,0,0,0,w*.62);
+    gl.addColorStop(0,rgba(opt.c,.3));gl.addColorStop(1,rgba(opt.c,0));
+    ctx.fillStyle=gl;ctx.beginPath();ctx.ellipse(0,0,w*.62,h*.09,0,0,TAU);ctx.fill();
+  }
+  const bgl=ctx.createRadialGradient(0,-h*.46,0,0,-h*.46,h*.62);
+  bgl.addColorStop(0,'rgba(3,7,14,.6)');bgl.addColorStop(.62,'rgba(3,7,14,.26)');
+  bgl.addColorStop(1,'rgba(3,7,14,0)');
+  ctx.fillStyle=bgl;ctx.beginPath();ctx.arc(0,-h*.46,h*.62,0,TAU);ctx.fill();
+  // 跑动时身体上下起伏 + 前倾
+  const bob=step*run*h*.032;
+  ctx.translate(0,-bob);
+  if(run>.02)ctx.rotate(Math.sin(t*11)*run*.026);
+  if(opt.roll)ctx.rotate(opt.roll*TAU);
+  if(opt.swing)ctx.rotate(-opt.swing*.13);
+  if(opt.flip)ctx.scale(-1,1);
+  const hh=h*(1+Math.sin(t*2.1+1)*.012);
+  let fil='';
+  if(opt.hue)fil+='hue-rotate('+opt.hue+'deg) ';
+  if(opt.hurt)fil+='brightness(1.85) saturate(.5) ';
+  if(fil)try{ctx.filter=fil}catch(e){}
+  ctx.globalAlpha=opt.alpha===undefined?1:opt.alpha;
+  if(opt.swing>.12){
+    ctx.globalAlpha=.2*opt.swing;
+    ctx.drawImage(img,-w/2+opt.swing*13,-hh,w,hh);
+    ctx.globalAlpha=opt.alpha===undefined?1:opt.alpha;
+  }
+  if(run>.04)drawWalkStripsV6(img,w,hh,t,run);
+  else ctx.drawImage(img,-w/2,-hh,w,hh);
+  ctx.filter='none';ctx.globalAlpha=1;
+  // 每一步落地扬起一点尘土 / 草屑
+  if(run>.35&&g&&g.parts){
+    const ph=Math.floor(t*11/Math.PI);
+    if(A._stepPh===undefined)A._stepPh=ph;
+    if(ph!==A._stepPh){
+      A._stepPh=ph;
+      if(g.parts.length<260){
+        for(let k=0;k<2;k++)g.parts.push({x:cx+rand(-w*.2,w*.2),y:cy+footY,
+          vx:rand(-26,26),vy:rand(-34,-8),c:'rgba(200,215,225,1)',t:.3,max:.3,sz:2});
+      }
+      if(kSoundV6()&&typeof sfxStyleV6==='function'&&Math.random()<.28)sfxStyleV6('slash','walk');
+    }
+  }
+  if(opt.hurt){
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=rgba('#ffffff',Math.min(.35,opt.hurt*1.7));
+    ctx.beginPath();ctx.ellipse(0,-hh*.5,w*.3,hh*.42,0,0,TAU);ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+  }
+  ctx.restore();
+  return true;
+};
+let _stepSoundT=0;
+function kSoundV6(){const n=performance.now();if(n-_stepSoundT<420)return false;_stepSoundT=n;return true}
+
+/* 地面层：透视、地平线雾、地面纹理、脚下光斑 */
+function drawGroundV6(g){
+  const t=themeFor(g.floor),hz=H*.38;
+  // 地面渐变：把原画下半部统一成"可以站立的地面"，而不是悬浮背景板
+  const gr=ctx.createLinearGradient(0,hz,0,H);
+  gr.addColorStop(0,rgba(t.ac,0));
+  gr.addColorStop(.22,rgba(t.ac,.07));
+  gr.addColorStop(1,rgba(t.ac,.25));
+  ctx.fillStyle=gr;ctx.fillRect(0,hz,W,H-hz);
+  // 近景地面压暗：把原画下方的云海/天空收成"可站立的地面"
+  const fg=ctx.createLinearGradient(0,H*.72,0,H);
+  fg.addColorStop(0,'rgba(6,12,20,0)');fg.addColorStop(1,'rgba(6,12,20,.26)');
+  ctx.fillStyle=fg;ctx.fillRect(0,H*.72,W,H*.28);
+  // 地平线雾带
+  const hg=ctx.createLinearGradient(0,hz-26,0,hz+30);
+  hg.addColorStop(0,'rgba(220,240,255,0)');
+  hg.addColorStop(.5,rgba(t.ac,.11));
+  hg.addColorStop(1,'rgba(220,240,255,0)');
+  ctx.fillStyle=hg;ctx.fillRect(0,hz-26,W,56);
+  // 透视线：近处间距大、远处间距小
+  ctx.save();ctx.strokeStyle=rgba(t.ac,.105);ctx.lineWidth=1;
+  for(let i=1;i<=7;i++){
+    const q=i/7,y=hz+(H-hz)*q*q;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+  }
+  ctx.strokeStyle=rgba(t.ac,.075);
+  for(let i=-4;i<=4;i++){
+    ctx.beginPath();ctx.moveTo(W/2+i*W*.075,hz);
+    ctx.lineTo(W/2+i*W*.31,H);ctx.stroke();
+  }
+  ctx.restore();
+  // 玩家脚下的地面光斑 + 接触亮边，强化"站在场景里"
+  const px=g.px,py=g.py,ds=depthScaleV6(py);
+  const pg=ctx.createRadialGradient(px,py,0,px,py,78*ds);
+  pg.addColorStop(0,rgba(t.ac,.26));pg.addColorStop(1,rgba(t.ac,0));
+  ctx.fillStyle=pg;ctx.beginPath();ctx.ellipse(px,py,78*ds,23*ds,0,0,TAU);ctx.fill();
+  ctx.strokeStyle=rgba(t.ac,.16);ctx.lineWidth=1;
+  ctx.beginPath();ctx.ellipse(px,py,36*ds,10*ds,0,0,TAU);ctx.stroke();
+  drawNodesV6(g);
+  drawEcoGroundV6(g);
+}
+/* 生态草叶分层：低于角色的画在身后，高于角色的画在身前形成遮挡 */
+function drawEcoBladesV6(g,front){
+  const kind=ecoKey||'grass',t=g.t,col=ecoColorV5(kind,g.floor);
+  ctx.save();
+  for(const b of ecoBlades){
+    const y=b.y*H;
+    if(front?(y<=g.py+4):(y>g.py+4))continue;
+    const x=b.x*W;
+    const wind=Math.sin(t*b.sp+b.ph)+.35*Math.sin(t*2.3+b.ph*1.7);
+    const sway=wind*b.amp;
+    ctx.strokeStyle=rgba(col,front?b.alpha*.9:b.alpha*.62);
+    ctx.lineWidth=b.w*(front?1.15:.9);ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(x,y);
+    ctx.quadraticCurveTo(x+sway*.35,y-b.h*.58,x+sway,y-b.h);ctx.stroke();
+    if(b.seed>.78){
+      ctx.fillStyle=rgba(kind==='petal'?'#ffe0f0':'#fff3c0',b.alpha*.8);
+      ctx.beginPath();ctx.arc(x+sway,y-b.h,1.8+b.w*.5,0,TAU);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function drawEcoGroundV6(g){drawEcoBladesV6(g,false)}
+function drawEcoFrontV6(g){
+  drawEcoBladesV6(g,true);
+  const kind=ecoKey||'grass',col=ecoColorV5(kind,g.floor),t=g.t;
+  if(kind==='grass'||kind==='leaf'||kind==='petal')return;
+  ctx.save();
+  for(let i=0;i<9;i++){
+    const x=((i*.137+Math.sin(t*.3+i)*.05)%1+1)%1*W;
+    const y=((i*.219+t*.03*(kind==='bubble'||kind==='wisp'||kind==='ember'?-1:1))%1+1)%1*H;
+    const r=3+(i%3)*2;
+    const gl=ctx.createRadialGradient(x,y,0,x,y,r*4);
+    gl.addColorStop(0,rgba(col,.22));gl.addColorStop(1,rgba(col,0));
+    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(x,y,r*4,0,TAU);ctx.fill();
+  }
+  ctx.restore();
+}
+/* 覆写背景：原画 + 地面层（实体之前的那一层） */
+const _drawBackgroundBase=drawBackground;
+drawBackground=function(g,dt){_drawBackgroundBase(g,dt);drawGroundV6(g)};
+
+/* 采集节点绘制 */
+function drawNodesV6(g){
+  if(!g.nodes)return;
+  for(const n of g.nodes){
+    const y=n.y,bob=Math.sin(g.t*2.4+n.ph)*3;
+    const ds=depthScaleV6(y),r=(11+n.k*3)*ds;
+    ctx.save();ctx.translate(n.x,y+bob);
+    const gl=ctx.createRadialGradient(0,-r*.4,0,0,0,r*2.6);
+    gl.addColorStop(0,rgba(n.c,.55));gl.addColorStop(1,rgba(n.c,0));
+    ctx.fillStyle=gl;ctx.beginPath();ctx.arc(0,0,r*2.6,0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,r*1.15,r*.9,r*.3,0,0,TAU);ctx.fill();
+    ctx.save();ctx.rotate(Math.sin(g.t*1.6+n.ph)*.22);
+    if(n.shape==='ore'){
+      ctx.fillStyle=n.c;ctx.beginPath();
+      ctx.moveTo(-r*.8,r*.5);ctx.lineTo(-r*.35,-r*.8);ctx.lineTo(r*.45,-r*.5);
+      ctx.lineTo(r*.8,r*.45);ctx.lineTo(0,r*.7);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();
+      ctx.moveTo(-r*.35,-r*.8);ctx.lineTo(0,r*.7);ctx.lineTo(r*.45,-r*.5);ctx.closePath();ctx.fill();
+    }else if(n.shape==='crystal'){
+      ctx.fillStyle=n.c;ctx.beginPath();ctx.moveTo(0,-r*1.4);ctx.lineTo(r*.7,-r*.2);
+      ctx.lineTo(r*.45,r*.75);ctx.lineTo(-r*.45,r*.75);ctx.lineTo(-r*.7,-r*.2);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(0,-r*1.4);ctx.lineTo(0,r*.75);ctx.stroke();
+    }else{
+      ctx.strokeStyle=n.c;ctx.lineWidth=2.2;ctx.lineCap='round';
+      for(let i=-2;i<=2;i++){
+        ctx.beginPath();ctx.moveTo(0,r*.7);
+        ctx.quadraticCurveTo(i*r*.35,-r*.2,i*r*.55,-r*.9-Math.abs(i)*2);ctx.stroke();
+      }
+      ctx.fillStyle='#fff6c0';ctx.beginPath();ctx.arc(0,-r*1.15,2.6,0,TAU);ctx.fill();
+    }
+    ctx.restore();
+    if(n.prog>0){
+      ctx.strokeStyle='rgba(255,240,170,.9)';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(0,0,r*2.1,-Math.PI/2,-Math.PI/2+TAU*clamp(n.prog,0,1));ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+/* 覆写主绘制：所有实体按 y 排序 + 透视缩放，与场景真正处于同一空间 */
+draw=function(){
+  const g=G;if(!g)return;
+  drawBackground(g,1/60);
+  ctx.save();
+  if(g.shake>0&&SAVE.settings.shake)ctx.translate(rand(-g.shake,g.shake),rand(-g.shake,g.shake));
+  // 命中顿帧时的轻微推镜 + 白闪
+  if(g.hitStop>0){
+    const z=1+Math.min(.016,g.hitStop*.13);
+    ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-W/2,-H/2);
+  }
+  for(const tp of g.tps)drawTelegraph(tp,g);
+  /* ---- 收集全部实体，按脚底 y 排序（远的先画、近的压在上面）---- */
+  const ents=[];
+  for(const m of g.mobs)ents.push({y:m.y,k:'mob',o:m});
+  if(g.boss&&!g.boss.dead)ents.push({y:g.boss.y,k:'boss',o:g.boss});
+  for(const m of g.mates)if(!m.dead)ents.push({y:m.y,k:'mate',o:m});
+  ents.push({y:g.py,k:'player',o:null});
+  ents.sort((a,b)=>a.y-b.y);
+  for(const e of ents){
+    if(e.k==='mob'){
+      const m=e.o;
+      withDepthV6(m.x,m.y,()=>{
+        if(m.spawnT>0){ctx.fillStyle=rgba(m.type.c,.35);ctx.beginPath();ctx.arc(m.x,m.y,m.r*(1-m.spawnT/.35+.3),0,TAU);ctx.fill();return}
+        const halo=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r*1.9);
+        halo.addColorStop(0,rgba(m.type.c,.16));halo.addColorStop(.6,rgba(m.type.c,.05));halo.addColorStop(1,rgba(m.type.c,0));
+        ctx.fillStyle=halo;ctx.beginPath();ctx.arc(m.x,m.y,m.r*1.9,0,TAU);ctx.fill();
+        ctx.strokeStyle=rgba(m.type.c,.6);ctx.lineWidth=1.6;
+        ctx.beginPath();ctx.ellipse(m.x,m.y+m.r*.78,m.r*.98,m.r*.34,0,0,TAU);ctx.stroke();
+        ctx.save();ctx.translate(m.x,m.y+Math.sin(g.t*4+m.wob)*2);ctx.globalAlpha=m.alpha;
+        drawMobShapeAnimated(m,g);ctx.globalAlpha=1;
+        if(m.hp<m.maxhp){
+          ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(-m.r,-m.r-11,m.r*2,4);
+          ctx.fillStyle=m.type.ai==='heal'?'#9cf0a8':'#ff8866';ctx.fillRect(-m.r,-m.r-11,m.r*2*clamp(m.hp/m.maxhp,0,1),4);
+        }
+        if(m.st==='windup'||m.st==='guard'||m.st==='boom'){
+          ctx.fillStyle=m.st==='guard'?'#a8d8ff':'#ffb060';
+          ctx.beginPath();ctx.arc(0,-m.r-18,3,0,TAU);ctx.fill();
+        }
+        ctx.restore();
+      });
+    }else if(e.k==='boss'){
+      const b=e.o;
+      withDepthV6(b.x,b.y,()=>{
+        ctx.save();ctx.translate(b.x,b.y+Math.sin(g.t*3)*3);
+        drawBossAnimated(b,g);ctx.restore();
+        if(b.shield>0){
+          ctx.strokeStyle='rgba(160,220,255,'+(.5+.3*Math.sin(g.t*8))+')';ctx.lineWidth=3;
+          ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.65,0,TAU);ctx.stroke();
+        }
+        if(b.stagger>0){ctx.fillStyle='#ffd257';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('BREAK!',b.x,b.y-b.r*2.1)}
+      });
+    }else if(e.k==='mate'){
+      const m=e.o;
+      withDepthV6(m.x,m.y,()=>{
+        ctx.save();ctx.globalAlpha=.95;
+        const tg=nearestTarget().t;
+        drawFighter(m.x,m.y,17,m.def.c,Math.atan2((tg?tg.y:m.y)-m.y,(tg?tg.x:m.x)-m.x),
+          {body:'#20304a',head:'#f0d8c0',hpBar:m.hp/m.maxhp,hpColor:m.def.c,anim:m.anim,cls:m.def.cls||'knight'});
+        ctx.restore();
+      });
+    }else{
+      const pOpts={invuln:g.invuln>0,guard:g.guard,parry:g.parryWin>0,dual:!!SAVE.learned.double,
+        eye:g.buffs.counter>0?'#ffd257':'#7fe0ff',anim:g.anim};
+      withDepthV6(g.px,g.py,()=>{
+        drawFighter(g.px,g.py,18,CLS().c,g.facing,pOpts);
+        if(g.burnT>0){ctx.strokeStyle='rgba(255,120,50,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.px,g.py,20,0,TAU);ctx.stroke()}
+        if(g.rootT>0){ctx.strokeStyle='rgba(120,220,120,.8)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(g.px,g.py,22,0,TAU);ctx.stroke()}
+        if(g.buffs.shield>0){ctx.strokeStyle='rgba(160,220,255,'+(.4+.3*Math.sin(g.t*7))+')';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(g.px,g.py,25,0,TAU);ctx.stroke()}
+      });
+    }
+  }
+  /* ---- 子弹 / 法阵 / 技能特效 ---- */
+  for(const b of g.bullets){
+    if(b.delay>0)continue;
+    ctx.fillStyle=rgba(b.c,.28);ctx.beginPath();ctx.arc(b.x,b.y,b.r*2.1,0,TAU);ctx.fill();
+    ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.beginPath();ctx.arc(b.x-b.vx*.012,b.y-b.vy*.012,b.r*.35,0,TAU);ctx.fill();
+  }
+  for(const p of g.pbullets){
+    ctx.fillStyle=rgba(p.c,.25);ctx.beginPath();ctx.arc(p.x,p.y,10,0,TAU);ctx.fill();
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.fillStyle=p.c;
+    ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-6,-4);ctx.lineTo(-3,0);ctx.lineTo(-6,4);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  drawRingsV6(g);
+  for(const f of g.skillFx){
+    const p=f.t/f.max;
+    if(f.kind==='nova'){
+      ctx.strokeStyle=rgba(f.c,p);ctx.lineWidth=5*p+1;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1-p*.6),0,TAU);ctx.stroke();
+      ctx.fillStyle=rgba(f.c,p*.15);ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1-p*.6),0,TAU);ctx.fill();
+    }else if(f.kind==='heal'||f.kind==='buff'||f.kind==='level'||f.kind==='parry'||f.kind==='combo'){
+      ctx.strokeStyle=rgba(f.c,p);ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(f.x,f.y,(f.kind==='combo'?160:38)*(1-p)+12,0,TAU);ctx.stroke();
+    }else if(f.kind==='cast'){
+      ctx.strokeStyle=rgba(f.c,p*.8);ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(f.x,f.y,30*(1-p)+8,0,TAU);ctx.stroke();
+    }
+  }
+  for(const s of g.slashes){
+    if(typeof drawSlashV5==='function'){drawSlashV5(s);continue}
+    ctx.strokeStyle=s.crit?rgba('#ffd257',s.t/.2):rgba(s.c||'#eafff9',s.t/.15*.9);
+    ctx.lineWidth=s.crit?3.5:2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();
+  }
+  drawImpactV6(g);
+  for(const p of g.parts){
+    const s=p.sz||3;ctx.fillStyle=rgba(p.c,clamp(p.t/p.max,0,1));ctx.fillRect(p.x,p.y,s,s);
+  }
+  drawDamageV6(g);
+  if(typeof drawPeersV4==='function')drawPeersV4(g);
+  if(g.hitStop>0){ctx.fillStyle='rgba(255,255,255,'+clamp(g.hitStop*.35,0,.045)+')';ctx.fillRect(0,0,W,H)}
+  ctx.restore();
+  drawV4(g);
+};
+/* 持续法阵 / 光环 */
+function drawRingsV6(g){
+  if(!g.rings)return;
+  for(const r of g.rings){
+    const p=clamp(r.t/r.max,0,1);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=rgba(r.c,.55*p);ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.ellipse(r.x,r.y,r.r,r.r*.42,0,0,TAU);ctx.stroke();
+    ctx.strokeStyle=rgba(r.c,.3*p);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.ellipse(r.x,r.y,r.r*.66,r.r*.28,0,0,TAU);ctx.stroke();
+    for(let i=0;i<6;i++){
+      const a=i*TAU/6+g.t*1.2;
+      ctx.fillStyle=rgba(r.c,.7*p);ctx.beginPath();
+      ctx.arc(r.x+Math.cos(a)*r.r,r.y+Math.sin(a)*r.r*.42,3,0,TAU);ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   V6-D · 推门过关演出 / 层主数秒元素吐息演出
+   ============================================================ */
+/* ---------- 过关：SAO 式推开层门 ---------- */
+const _clearFloorBase=clearFloor;
+clearFloor=function(){
+  _clearFloorBase();
+  const g=G;if(!g)return;
+  g.state='gate';g.paused=false;
+  g.gate={t:0,dur:3.9,floor:g.floor,lit:0,sparks:[]};
+  g.mobs.forEach(m=>m.dead=true);g.tps.length=0;g.bullets.length=0;
+  const an=$('announce');if(an){an.style.opacity='0'}
+  const tt=$('toast');if(tt)tt.style.opacity='0';
+  try{sfxStyleV6('slash','gate')}catch(e){}
+};
+function updateGateV6(dt){
+  const g=G,D=g.gate;if(!D)return false;
+  D.t+=dt;g.t+=dt;
+  const p=clamp(D.t/D.dur,0,1);
+  // 角色迈步走向门，最后步入光中
+  const tx=W/2,ty=H*.655;
+  const walk=clamp(p/.62,0,1);
+  if(walk<1){g.px+=(tx-g.px)*Math.min(1,dt*2.6);g.py+=(ty-g.py)*Math.min(1,dt*2.6)}
+  else{g.py+=dt*26}
+  if(g.anim){g.anim.t+=dt*2.5;g.anim.run=walk<1?clamp(walk*3,0,1):Math.max(0,1-(p-.62)*5);g.anim.swingT=0}
+  g.facing=Math.PI/2;
+  // 门缝里飞出的光尘
+  if(p>.44&&p<.94&&Math.random()<.6){
+    D.sparks.push({x:W/2+rand(-W*.12,W*.12),y:H*.42+rand(-H*.12,H*.12),
+      vx:rand(-70,70),vy:rand(-120,-20),t:rand(.4,1.1),max:1.1,r:rand(1,3.5)});
+  }
+  for(let i=D.sparks.length-1;i>=0;i--){const s=D.sparks[i];s.t-=dt;s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.t<=0)D.sparks.splice(i,1)}
+  if(D.t>=D.dur){
+    g.gate=null;g.state='camp';g.paused=true;
+    if(typeof openCamp==='function')openCamp();
+  }
+  return true;
+}
+function drawGateV6(g){
+  const D=g.gate;if(!D)return;
+  const p=clamp(D.t/D.dur,0,1),cx=W/2;
+  const dw=Math.min(W*.66,360),top=H*.145,bot=H*.79,dh=bot-top;
+  // 门开启：两扇门向左右透视收拢
+  const open=clamp((p-.46)/.3,0,1),ease=open*open*(3-2*open);
+  // 背后的光
+  const light=clamp((p-.42)/.34,0,1);
+  const lg=ctx.createRadialGradient(cx,top+dh*.48,10,cx,top+dh*.48,dw*(.5+light*1.7));
+  lg.addColorStop(0,'rgba(255,248,220,'+(.18+light*.8)+')');
+  lg.addColorStop(.42,'rgba(255,214,140,'+(light*.42)+')');
+  lg.addColorStop(1,'rgba(255,200,120,0)');
+  ctx.fillStyle=lg;ctx.fillRect(0,0,W,H);
+  // 门内射出的光柱（随开启变宽）
+  if(light>0){
+    const half=dw*.5*ease;
+    const bg2=ctx.createLinearGradient(cx-half,0,cx+half,0);
+    bg2.addColorStop(0,'rgba(255,240,200,0)');
+    bg2.addColorStop(.5,'rgba(255,246,214,'+light*.5+')');
+    bg2.addColorStop(1,'rgba(255,240,200,0)');
+    ctx.fillStyle=bg2;ctx.fillRect(cx-half,top,half*2,dh);
+  }
+  // 门框
+  ctx.save();
+  ctx.strokeStyle='rgba(255,225,160,'+(.35+light*.5)+')';ctx.lineWidth=7;
+  ctx.strokeRect(cx-dw/2-9,top-9,dw+18,dh+18);
+  ctx.strokeStyle='rgba(140,110,70,.9)';ctx.lineWidth=3;
+  ctx.strokeRect(cx-dw/2-3,top-3,dw+6,dh+6);
+  // 两扇门板
+  for(const side of[-1,1]){
+    const w=dw/2*(1-ease*.88);
+    const x0=side<0?(cx-dw/2):(cx+dw/2-w);
+    ctx.save();ctx.beginPath();ctx.rect(x0,top,w,dh);ctx.clip();
+    const dg=ctx.createLinearGradient(x0,0,x0+w,0);
+    dg.addColorStop(0,'#2a2018');dg.addColorStop(.5,'#4a3a28');dg.addColorStop(1,'#201812');
+    ctx.fillStyle=dg;ctx.fillRect(x0,top,w,dh);
+    ctx.strokeStyle='rgba(190,155,95,.55)';ctx.lineWidth=2;
+    for(let k=1;k<5;k++){
+      const yy=top+dh*k/5;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x0+w,yy);ctx.stroke();
+    }
+    ctx.strokeStyle='rgba(215,180,115,.4)';ctx.lineWidth=1.4;
+    const rivetX=side<0?(x0+w-18):(x0+18);
+    for(let k=0;k<7;k++){
+      const yy=top+dh*(k+.5)/7;
+      ctx.beginPath();ctx.arc(rivetX,yy,3.4,0,TAU);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // 中央门缝与双门环：明确是"两扇门"，开门时逐渐淡出
+  if(ease<.98){
+    const seam=(1-ease);
+    ctx.strokeStyle='rgba(255,228,160,'+.6*seam+')';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,top);ctx.lineTo(cx,bot);ctx.stroke();
+    for(const s of[-1,1]){
+      ctx.strokeStyle='rgba(255,215,130,'+.85*seam+')';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(cx+s*25,top+dh*.52,11,0,TAU);ctx.stroke();
+      ctx.fillStyle='rgba(255,215,130,'+.32*seam+')';ctx.beginPath();ctx.arc(cx+s*25,top+dh*.52,7,0,TAU);ctx.fill();
+    }
+  }
+  // 门内铭牌：避开左上 HUD
+  if(p<.62){
+    const by=top+14;
+    ctx.fillStyle='rgba(10,14,22,.86)';ctx.fillRect(cx-92,by,184,32);
+    ctx.strokeStyle='rgba(255,215,130,.7)';ctx.lineWidth=1.5;ctx.strokeRect(cx-92,by,184,32);
+    ctx.fillStyle='#ffe6ae';ctx.textAlign='center';ctx.font='bold 16px sans-serif';
+    ctx.fillText('第 '+D.floor+' 层 · 已突破',cx,by+22);
+  }
+  ctx.restore();
+  // 光尘
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const s of D.sparks){
+    const q=clamp(s.t/s.max,0,1);
+    ctx.fillStyle='rgba(255,236,180,'+q*.85+')';
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r*q,0,TAU);ctx.fill();
+  }
+  ctx.restore();
+  // 角色站在门前（门在身后），一步步走进光里
+  if(p<.86){
+    const g=G,img=ART.img['class_'+(typeof SAVE!=='undefined'?SAVE.cls:'swordsman')];
+    if(img&&typeof spriteFighterV5==='function'){
+      const fade=p>.62?clamp(1-(p-.62)/.24,0,1):1;
+      ctx.save();ctx.globalAlpha=fade;
+      const gl=ctx.createRadialGradient(g.px,g.py,0,g.px,g.py,76);
+      gl.addColorStop(0,'rgba(255,235,180,'+.34*(1-p)+')');gl.addColorStop(1,'rgba(255,235,180,0)');
+      ctx.fillStyle=gl;ctx.beginPath();ctx.ellipse(g.px,g.py,76,21,0,0,TAU);ctx.fill();
+      spriteFighterV5(g.px,g.py,18,(typeof CLS==='function'?CLS().c:'#7fe0ff'),Math.PI/2,{anim:g.anim});
+      ctx.restore();
+    }
+  }
+  // 收尾白光与文字
+  if(p>.78){
+    const w=clamp((p-.78)/.22,0,1);
+    ctx.fillStyle='rgba(255,250,232,'+w*.72+')';ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=clamp((p-.8)/.12,0,1);
+    ctx.textAlign='center';ctx.fillStyle='#3a2a12';
+    ctx.font='900 '+Math.round(clamp(W*.062,20,32))+'px sans-serif';
+    ctx.fillText('第 '+D.floor+' 层 · 突破',cx,H*.44);
+    ctx.font='14px sans-serif';ctx.fillStyle='#6a5228';
+    const nm=FLOOR_NAMES[D.floor]||'未知领域';
+    ctx.fillText('门后是 第 '+(D.floor+1)+' 层 · '+nm,cx,H*.44+30);
+    ctx.font='11px sans-serif';ctx.fillStyle='#8a7040';
+    ctx.fillText('FLOOR CLEAR — 前往营地补给后继续攻略',cx,H*.44+56);
+    ctx.globalAlpha=1;
+  }
+  // 前段：压暗四周，聚光到门
+  if(p<.5){
+    const d=(1-clamp(p/.28,0,1))*.62;
+    ctx.fillStyle='rgba(2,5,12,'+d+')';ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* ---------- 层主元素吐息：按地貌切换火 / 冰 / 暗 / 光 / 风 / 雷 ---------- */
+const ELEM_BY_THEME={
+ lava:'fire',blood:'fire',canyon:'wind',desert:'wind',plain:'wind',town:'wind',bamboo:'wind',forest:'wind',
+ snow:'ice',ice:'ice',crystal:'ice',cave:'void',grave:'void',abyss:'void',under:'void',mist:'void',
+ sea:'thunder',lake:'thunder',city:'thunder',sky:'holy',final:'holy',garden:'holy',sakura:'holy',ruin:'holy'
+};
+const ELEM_COL={
+ fire:['#ff5a20','#ffb43c','#fff0a8'],ice:['#4fc8ff','#b8f0ff','#ffffff'],
+ void:['#7a3ad0','#c77cff','#1a0b2a'],holy:['#ffd070','#fff4c0','#ffffff'],
+ wind:['#48e0a0','#b8ffd8','#ffffff'],thunder:['#6a8cff','#c0d0ff','#ffffff']
+};
+function bossElemV6(f){return ELEM_BY_THEME[themeKeyV5(f)]||'fire'}
+const _onBossSpawnV4Base=onBossSpawnV4;
+onBossSpawnV4=function(b){
+  _onBossSpawnV4Base(b);
+  const g=G,I=g.intro;if(!I)return;
+  I.dur=b.def.landmark?4.8:3.8;
+  I.elem=bossElemV6(g.floor);
+  I._elemSfx=0;
+  // 演出期间把小怪清空、镜头略微前推
+  g.mobs.forEach(m=>m.dead=true);
+};
+const _updateIntroV4Base=updateIntroV4;
+updateIntroV4=function(dt){
+  const g=G,I=g.intro;
+  if(I&&I.elem){
+    const p=I.t/I.dur;
+    if(!I._elemSfx&&p>.30){
+      I._elemSfx=1;
+      try{sfxStyleV6('slash','bossfire')}catch(e){}
+      g.shake=Math.max(g.shake,I.landmark?16:10);
+      flash(ELEM_COL[I.elem][1],.22);
+    }
+    // 吐息期间持续喷出元素粒子
+    if(p>.30&&p<.70&&g.parts){
+      const cols=ELEM_COL[I.elem];
+      for(let i=0;i<3;i++){
+        const a=rand(-.6,.6)+Math.PI*.5,sp=rand(120,420);
+        g.parts.push({x:I.b.x+rand(-24,24),y:I.b.y-14,
+          vx:Math.cos(a)*sp,vy:Math.abs(Math.sin(a))*sp*.5+60,
+          c:cols[i%3],t:rand(.35,.85),max:.85,sz:rand(2,5)});
+      }
+    }
+  }
+  return _updateIntroV4Base(dt);
+};
+function drawBossElementV6(g,I){
+  const p=I.t/I.dur;
+  if(p<.28||p>.74)return;
+  const q=(p-.28)/.46;
+  const env=Math.sin(Math.min(1,q*2)*Math.PI);       // 0→1→0 的喷吐包络
+  if(env<=.01)return;
+  const elem=I.elem||'fire',cols=ELEM_COL[elem];
+  const bx=I.b.x,by=I.b.y-I.b.r*.55;
+  const dir=(g.px>=bx)?1:-1;
+  const len=Math.min(W*.62,420)*env;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  ctx.translate(bx,by);
+  // 吐息锥：三层渐变 + 边缘火舌
+  for(let layer=0;layer<3;layer++){
+    const L=len*(1-layer*.16),w0=(14+layer*8),w1=(86+layer*44)*env;
+    const gr=ctx.createLinearGradient(0,0,dir*L,0);
+    gr.addColorStop(0,rgba(cols[2],.85*env));
+    gr.addColorStop(.28,rgba(cols[1],.55*env));
+    gr.addColorStop(.72,rgba(cols[0],.3*env));
+    gr.addColorStop(1,rgba(cols[0],0));
+    ctx.fillStyle=gr;
+    ctx.beginPath();ctx.moveTo(0,-w0);
+    for(let k=0;k<=8;k++){
+      const u=k/8,w=w0+(w1-w0)*u;
+      const yy=-w+Math.sin(k*2.1+g.t*19+layer)*6*u;
+      ctx.lineTo(dir*L*u,yy);
+    }
+    for(let k=8;k>=0;k--){
+      const u=k/8,w=w0+(w1-w0)*u;
+      const yy=w+Math.sin(k*1.7+g.t*17+layer+2)*6*u;
+      ctx.lineTo(dir*L*u,yy);
+    }
+    ctx.closePath();ctx.fill();
+  }
+  // 口部的能量核
+  const core=ctx.createRadialGradient(0,0,0,0,0,46*env);
+  core.addColorStop(0,'rgba(255,255,255,'+env*.95+')');
+  core.addColorStop(.35,rgba(cols[1],env*.8));core.addColorStop(1,rgba(cols[0],0));
+  ctx.fillStyle=core;ctx.beginPath();ctx.arc(0,0,46*env,0,TAU);ctx.fill();
+  ctx.restore();
+  // 地面被吐息照亮 / 焦痕
+  const gy=I.b.y+I.b.r*.9;
+  const gg=ctx.createRadialGradient(bx+dir*len*.55,gy,0,bx+dir*len*.55,gy,len*.6);
+  gg.addColorStop(0,rgba(cols[0],.28*env));gg.addColorStop(1,rgba(cols[0],0));
+  ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(bx+dir*len*.55,gy,len*.6,42*env,0,0,TAU);ctx.fill();
+  // 元素名
+  if(q>.12&&q<.9){
+    const names={fire:'炎之吐息',ice:'霜之吐息',void:'暗蚀吐息',holy:'圣光吐息',wind:'风之吐息',thunder:'雷之吐息'};
+    ctx.save();ctx.textAlign='center';ctx.font='bold 13px sans-serif';
+    ctx.fillStyle=rgba(cols[2],.85*Math.sin(q*Math.PI));
+    ctx.fillText(names[elem]||'吐息',bx,by-I.b.r*.9);ctx.restore();
+  }
+}
+const _drawIntroV4Base=drawIntroV4;
+drawIntroV4=function(g){
+  _drawIntroV4Base(g);
+  if(g.intro)drawBossElementV6(g,g.intro);
+};
+/* 汇总：gate 优先于其它更新 */
+const _updateV4Base=updateV4;
+updateV4=function(dt){
+  const g=G;
+  if(g&&g.gate){updateGateV6(dt);return true}
+  return _updateV4Base(dt);
+};
+/* 汇总绘制顺序：V4 基础层 → 前景生态（角色身前）→ 推门演出 */
+drawV4=function(g){
+  drawV4Base(g);
+  drawEcoFrontV6(g);
+  drawGateV6(g);
+};
+
+/* ============================================================
+   V6-E · 生活职业玩法 / 采集 / 工坊 / 新技能实战效果
+   ============================================================ */
+/* ---------- 存档扩展 ---------- */
+DEF_SAVE.mats={ore:0,herb:0,crystal:0,bone:0,dew:0};
+DEF_SAVE.craft={forgeLv:0,equip:{atk:0,hp:0},known:[],recipes:[],potions:{},goods:{},price:null,lastFloor:0,trend:{}};
+SAVE.mats=Object.assign({ore:0,herb:0,crystal:0,bone:0,dew:0},SAVE.mats||{});
+SAVE.craft=Object.assign({forgeLv:0,equip:{atk:0,hp:0},known:[],recipes:[],potions:{},goods:{},price:null,lastFloor:0,trend:{}},SAVE.craft||{});
+SAVE.craft.equip=Object.assign({atk:0,hp:0},SAVE.craft.equip||{});
+SAVE.craft.known=SAVE.craft.known||[];SAVE.craft.recipes=SAVE.craft.recipes||[];
+SAVE.craft.potions=SAVE.craft.potions||{};SAVE.craft.goods=SAVE.craft.goods||{};
+SAVE.craft.trend=SAVE.craft.trend||{};
+const MATS=[
+ {id:'ore',    n:'铁矿石',  c:'#b8c2d0',shape:'ore',    d:'洞窟与熔岩层常见，锻造的主料。'},
+ {id:'herb',   n:'药草',    c:'#8fe0a0',shape:'herb',   d:'草原、森林与花园层随风生长。'},
+ {id:'crystal',n:'元素晶石',c:'#c9b0ff',shape:'crystal',d:'雪原、水晶与深层迷宫里的凝结物。'},
+ {id:'bone',   n:'魔物骨',  c:'#e8dcc0',shape:'ore',    d:'墓地与深渊层的残留，炼金的触媒。'},
+ {id:'dew',    n:'晨露',    c:'#9cefff',shape:'crystal',d:'湖海与雨城层采集，调合必备。'},
+];
+const MAT_BY_ID={};MATS.forEach(m=>MAT_BY_ID[m.id]=m);
+const ECO_MAT={grass:'herb',leaf:'herb',petal:'herb',gold:'crystal',snow:'crystal',sand:'ore',ember:'ore',
+ spark:'crystal',bubble:'dew',wisp:'bone',rain:'dew',dust:'bone'};
+const GOODS=[{id:'ore',n:'铁矿石',base:15},{id:'herb',n:'药草',base:11},{id:'crystal',n:'元素晶石',base:24}];
+const RECIPES=[
+ {n:'治愈药',   r:[70,10,20],tol:15,c:'#9cf0a8',eff:'回复 45% 生命',              kind:'heal'},
+ {n:'气力药',   r:[55,15,30],tol:13,c:'#8fe8ff',eff:'回满耐力并 8 秒攻速提升',     kind:'sta'},
+ {n:'爆裂药',   r:[15,65,20],tol:14,c:'#ff9a60',eff:'12 秒攻击力 +40%',           kind:'atk'},
+ {n:'护壁药',   r:[20,20,60],tol:14,c:'#a8d8ff',eff:'8 秒减伤并反弹伤害',         kind:'guard'},
+ {n:'疾风药',   r:[40,15,45],tol:13,c:'#b8ffd8',eff:'10 秒移速大幅提升',          kind:'spd'},
+ {n:'腐蚀药',   r:[10,70,20],tol:13,c:'#c8e878',eff:'全场魔物持续中毒 8 秒',       kind:'poison'},
+ {n:'星屑药',   r:[34,33,33],tol:9, c:'#ffd257',eff:'立刻获得金币与技能点',        kind:'luck'},
+];
+
+/* ---------- 场景初始化挂钩 ---------- */
+const _startFloorBase=startFloor;
+startFloor=function(f,first){
+  _startFloorBase(f,first);
+  const g=G;if(!g)return;
+  g.nodes=[];g.nodeCd=1.1;g.rings=[];
+  g.v6={atkT:0,atkOn:0,auraT:0,wallT:0,smokeT:0,charge:null};
+  refreshMarketV6(f);
+};
+/* 锻造出的永久装备只在开局追加一次，避免每上一层重复叠加 */
+const _newGameBase=newGame;
+newGame=function(floor){
+  _newGameBase(floor);
+  if(!G)return;
+  const e=SAVE.craft.equip;
+  if(e.atk)G.atk+=e.atk;
+  if(e.hp){G.maxhp+=e.hp;G.hp=G.maxhp}
+};
+function refreshMarketV6(f){
+  const c=SAVE.craft,prev=c.price||{};
+  const price={};
+  GOODS.forEach((gd,i)=>{
+    const R=seeded((f*7919+i*104729)>>>0);
+    price[gd.id]=Math.max(4,Math.round(gd.base*(.62+R()*1.15)*(1+f*.008)));
+    c.trend[gd.id]=prev[gd.id]?price[gd.id]-prev[gd.id]:0;
+  });
+  c.price=price;c.lastFloor=f;saveGame();
+}
+/* ---------- 采集节点 ---------- */
+function spawnNodeV6(g){
+  const kind=ECO_MAT[ecoKindV5(g.floor)]||'herb';
+  const m=MAT_BY_ID[kind]||MAT_BY_ID.herb;
+  g.nodes.push({x:rand(W*.1,W*.9),y:rand(H*.48,H*.82),mat:kind,c:m.c,shape:m.shape,
+    k:Math.floor(rand(0,3)),ph:rand(0,TAU),prog:0});
+}
+function updateNodesV6(dt){
+  const g=G;if(!g||g.dead||g.state!=='fight')return;
+  if(!g.nodes)g.nodes=[];
+  g.nodeCd=(g.nodeCd===undefined?1.5:g.nodeCd)-dt;
+  if(g.nodeCd<=0){g.nodeCd=rand(3.4,5.6);if(g.nodes.length<5)spawnNodeV6(g)}
+  let near=null;
+  for(const n of g.nodes){
+    const d=dist(n.x,n.y,g.px,g.py);
+    if(d<52){near=n;n.prog+=dt/.62}
+    else n.prog=Math.max(0,n.prog-dt*1.6);
+    if(n.prog>=1){
+      const bonus=CLS().craft?2:1;
+      SAVE.mats[n.mat]=(SAVE.mats[n.mat]||0)+bonus;
+      saveGame();
+      floatText(n.x,n.y-24,'+'+bonus+' '+MAT_BY_ID[n.mat].n,'#ffe6a8',false);
+      for(let i=0;i<10;i++)burst(n.x+rand(-12,12),n.y+rand(-12,12),n.c,1);
+      try{sfxStyleV6('slash','collect')}catch(e){}
+      n.done=true;
+    }
+  }
+  g.nodes=g.nodes.filter(n=>!n.done);
+  if(near&&typeof toastOnceV6==='function')toastOnceV6('采集中 · 停留片刻即可拾取 '+MAT_BY_ID[near.mat].n);
+}
+let _toastOnceT=0;
+function toastOnceV6(s){const n=performance.now();if(n-_toastOnceT<4200)return;_toastOnceT=n;toast(s)}
+/* ---------- 持续效果 ---------- */
+function updateRingsV6(dt){
+  const g=G;if(!g||!g.rings)return;
+  for(const r of g.rings){
+    r.t-=dt;r.cd-=dt;
+    if(r.cd<=0){
+      r.cd=.38;
+      g.mobs.forEach(m=>{if(dist(m.x,m.y,r.x,r.y)<r.r)hurtMob(m,r.dmg,false)});
+      if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,r.x,r.y)<r.r+30)hurtBoss(g.boss,r.dmg*.8,false);
+      g.skillFx.push({t:.3,max:.3,kind:'nova',x:r.x,y:r.y,r:r.r*.5,c:r.c});
+    }
+  }
+  g.rings=g.rings.filter(r=>r.t>0);
+}
+function updateV6Buffs(dt){
+  const g=G;if(!g||!g.v6)return;
+  const v=g.v6;
+  // 战吼：临时攻击力
+  if(v.atkT>0){v.atkT-=dt;if(!v.atkOn){v.atkOn=1;g.atk*=1.4}}
+  else if(v.atkOn){v.atkOn=0;g.atk/=1.4}
+  // 祝福光环：持续回血
+  if(v.auraT>0){v.auraT-=dt;g.hp=Math.min(g.maxhp,g.hp+g.maxhp*.016*dt);
+    if(Math.random()<.14)g.parts.push({x:g.px+rand(-20,20),y:g.py+rand(-10,20),vx:0,vy:-34,c:'#ffe9a0',t:.5,max:.5,sz:2})}
+  // 大地壁垒：反伤
+  if(v.wallT>0){v.wallT-=dt;
+    g.mobs.forEach(m=>{if(dist(m.x,m.y,g.px,g.py)<92&&Math.random()<.06)hurtMob(m,g.atk*.3,false)})}
+  // 烟幕：魔物失去目标
+  if(v.smokeT>0){v.smokeT-=dt;
+    g.mobs.forEach(m=>{m.stunT=Math.max(m.stunT||0,.18);m.st='stun'})}
+  // 淬毒
+  for(const m of g.mobs){if(m.poisonT>0){m.poisonT-=dt;m.poisonCd=(m.poisonCd||0)-dt;
+    if(m.poisonCd<=0){m.poisonCd=.55;hurtMob(m,g.atk*.28,false);burst(m.x,m.y,'#a8e878',1)}}}
+  // 元气弹蓄力
+  if(v.charge){
+    const c=v.charge;c.t-=dt;
+    if(c.t<=0){
+      v.charge=null;
+      const dmg=g.atk*c.dmg*diff().player;
+      g.skillFx.push({t:.7,max:.7,kind:'nova',x:c.x,y:c.y,r:c.r,c:c.c});
+      flash(c.c,.34);g.shake=Math.max(g.shake,14);
+      g.mobs.forEach(m=>{if(dist(m.x,m.y,c.x,c.y)<c.r)hurtMob(m,dmg,true)});
+      if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,c.x,c.y)<c.r+60)hurtBoss(g.boss,dmg*1.15,true);
+      for(let i=0;i<48;i++){const a=rand(0,TAU),sp=rand(60,340);
+        g.parts.push({x:c.x,y:c.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,c:i%2?c.c:'#ffffff',t:rand(.3,.8),max:.8,sz:rand(2,4)})}
+      tone(70,.8,'sawtooth',.28,32);noise(.7,.2,420,.6);
+      chimeV6([523,659,784,1047],.5);
+    }
+  }
+}
+function chimeV6(fr,dur){fr.forEach((f,i)=>tone(f,dur,'sine',.06,null,i*.045))}
+/* 所有实体都约束在地面平面内，杜绝"飘在天空里打怪" */
+function clampGroundV6(){
+  const g=G;if(!g)return;
+  const top=H*.36,bot=H*.89;
+  g.py=clamp(g.py,H*.30,H*.88);g.px=clamp(g.px,20,W-20);
+  for(const m of g.mobs){m.x=clamp(m.x,18,W-18);m.y=clamp(m.y,top,bot)}
+  for(const m of g.mates){m.x=clamp(m.x,18,W-18);m.y=clamp(m.y,top,bot)}
+  if(g.boss&&!g.boss.dead){g.boss.x=clamp(g.boss.x,30,W-30);g.boss.y=clamp(g.boss.y,H*.36,H*.74)}
+}
+const _postUpdateV4Base=postUpdateV4;
+postUpdateV4=function(dt){
+  _postUpdateV4Base(dt);
+  clampGroundV6();updateNodesV6(dt);updateRingsV6(dt);updateV6Buffs(dt);
+};
+/* 蓄力球绘制（挂在特效层） */
+function drawChargeV6(g){
+  const v=g.v6;if(!v||!v.charge)return;
+  const c=v.charge,p=1-clamp(c.t/c.max,0,1);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const r=10+p*46;
+  const gl=ctx.createRadialGradient(c.x,c.y-r*.4,0,c.x,c.y,r*2.2);
+  gl.addColorStop(0,'rgba(255,255,255,.95)');gl.addColorStop(.32,rgba(c.c,.75));gl.addColorStop(1,rgba(c.c,0));
+  ctx.fillStyle=gl;ctx.beginPath();ctx.arc(c.x,c.y,r*2.2,0,TAU);ctx.fill();
+  ctx.strokeStyle=rgba(c.c,.8);ctx.lineWidth=2;
+  for(let i=0;i<3;i++){
+    ctx.beginPath();ctx.ellipse(c.x,c.y,r*(1.3+i*.4),r*(.5+i*.16),g.t*(i%2?2:-2),0,TAU);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- 新技能实战效果 ---------- */
+function v6SlashV6(ang,range,col,crit){
+  const g=G;
+  g.slashes.push({x1:g.px+Math.cos(ang)*10,y1:g.py+Math.sin(ang)*10,
+    x2:g.px+Math.cos(ang)*range,y2:g.py+Math.sin(ang)*range,t:.24,crit:!!crit,c:col,style:CLS().style});
+}
+function useSkillV6(i){
+  const g=G;if(!g||g.dead||g.paused||g.state==='cleared'||g.state==='gate'||g.intro)return false;
+  const id=SAVE.skills[i],s=SKILL_BY_ID[id];
+  if(!s||V6_IDS.indexOf(id)<0)return false;
+  if(!skillUsableV6(id)){toast('需转职为「'+skillOwnerNameV6(id)+'」');return true}
+  if((g.cds[id]||0)>0){toast(s.n+' 冷却中');return true}
+  if(g.sta<s.sta){toast('耐力不足');return true}
+  g.sta-=s.sta;g.cds[id]=s.cd;g.lastSkill=id;
+  const dmg=g.atk*(s.dmg||2)*diff().player,ang=g.facing,col=s.c||CLS().c;
+  const nov=(r,x,y)=>g.skillFx.push({t:.5,max:.5,kind:'nova',c:col,x:x===undefined?g.px:x,y:y===undefined?g.py:y,r:r||120});
+  sfxClassV6('cast');
+  g.skillFx.push({t:.3,max:.3,kind:'cast',x:g.px,y:g.py,c:col});
+  if(g.anim)g.anim.swingT=.3;
+  switch(s.fx){
+    case 'arc':
+      sfx('crit');v4HitArc(ang,240,.62,dmg,{crit:true,break:true});
+      v6SlashV6(ang,240,col,true);nov(110);g.shake=8;break;
+    case 'triple':
+      for(let k=0;k<3;k++)setTimeout(()=>{if(g.dead)return;
+        v4HitArc(ang,170+k*40,.75+k*.12,dmg*(1+k*.25),{crit:k===2,stun:.6});
+        v6SlashV6(ang+k*.12,180+k*40,col,k===2);nov(80+k*30);sfx('swing')},k*170);
+      g.shake=6;break;
+    case 'flurry':
+      for(let k=0;k<8;k++)setTimeout(()=>{if(g.dead)return;
+        const a=ang+rand(-1.5,1.5);
+        v6SlashV6(a,130,col,k%3===0);
+        g.mobs.forEach(m=>{if(dist(m.x,m.y,g.px,g.py)<175)hurtMob(m,dmg*.4,true)});
+        if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,g.px,g.py)<210)hurtBoss(g.boss,dmg*.32,true);
+        sfx('crit')},k*95);
+      break;
+    case 'cross':
+      for(let k=0;k<2;k++){const a=ang+k*Math.PI/2;v4HitArc(a,230,.5,dmg,{crit:true});v6SlashV6(a,230,col,true)}
+      nov(150);g.shake=7;break;
+    case 'line':{
+      const L=Math.max(W,H);
+      const tx=g.px+Math.cos(ang)*L,ty=g.py+Math.sin(ang)*L;
+      v6SlashV6(ang,L,col,true);
+      g.mobs.forEach(m=>{if(distToSeg(m.x,m.y,g.px,g.py,tx,ty)<46)hurtMob(m,dmg,true)});
+      if(g.boss&&!g.boss.dead&&distToSeg(g.boss.x,g.boss.y,g.px,g.py,tx,ty)<70)hurtBoss(g.boss,dmg*1.2,true);
+      g.shake=5;break;}
+    case 'sweep':
+      v4HitArc(ang,210,2.0,dmg,{stun:1.4});nov(190);g.shake=9;
+      for(let k=-3;k<=3;k++)v6SlashV6(ang+k*.28,200,col,k===0);break;
+    case 'spiritbomb':{
+      const tx=clamp(g.px+Math.cos(ang)*190,40,W-40),ty=clamp(g.py+Math.sin(ang)*190,40,H-40);
+      g.v6.charge={t:.72,max:.72,x:tx,y:ty,r:150,c:col,dmg:s.dmg};
+      announce('符文 · 元气弹','RUNE SPIRIT BOMB · 蓄力中',1.1);
+      tone(180,.7,'sawtooth',.12,620);break;}
+    case 'ring':
+      g.rings.push({x:g.px,y:g.py,r:150,t:5,max:5,cd:0,dmg:dmg*.55,c:col});
+      nov(160);break;
+    case 'rain':
+      for(let k=0;k<7;k++)setTimeout(()=>{if(g.dead)return;
+        const ax=rand(40,W-40),ay=rand(H*.3,H*.84);
+        g.skillFx.push({t:.45,max:.45,kind:'nova',c:col,x:ax,y:ay,r:86});
+        v6SlashV6(Math.PI/2,70,col,false);
+        g.mobs.forEach(m=>{if(dist(m.x,m.y,ax,ay)<88){hurtMob(m,dmg,false);m.spd*=.82}});
+        if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,ax,ay)<100)hurtBoss(g.boss,dmg*.7,false);
+        sfx('hit')},k*190);
+      break;
+    case 'pillar':{
+      const tx=g.px+Math.cos(ang)*150,ty=g.py+Math.sin(ang)*150;
+      g.skillFx.push({t:.8,max:.8,kind:'nova',c:col,x:tx,y:ty,r:145});
+      g.mobs.forEach(m=>{if(dist(m.x,m.y,tx,ty)<145)hurtMob(m,dmg,true)});
+      if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,tx,ty)<165)hurtBoss(g.boss,dmg,true);
+      g.hp=Math.min(g.maxhp,g.hp+g.maxhp*.2);floatText(g.px,g.py-40,'+20%','#9cf0a8');
+      for(let k=0;k<20;k++)burst(tx+rand(-40,40),ty+rand(-40,40),col,1);
+      g.shake=6;break;}
+    case 'aura':
+      g.v6.auraT=8;g.buffs.guard=Math.max(g.buffs.guard,8);
+      g.skillFx.push({t:1,max:1,kind:'buff',x:g.px,y:g.py,c:col,r:90});
+      announce('祝福光环','持续回复 · 伤害减免',1.3);break;
+    case 'backstab':{
+      let t=null,bd=1e9;
+      for(const m of g.mobs)if(!m.dead){const d=dist(m.x,m.y,g.px,g.py);if(d<bd){bd=d;t=m}}
+      if(!t&&g.boss&&!g.boss.dead)t=g.boss;
+      if(t){const a=Math.atan2(t.y-g.py,t.x-g.px);
+        g.px=t.x-Math.cos(a)*42;g.py=t.y-Math.sin(a)*42;
+        g.slashes.push({x1:g.px,y1:g.py,x2:t.x,y2:t.y,t:.2,crit:true,c:col});
+        if(t===g.boss)hurtBoss(t,dmg*1.4,true);else hurtMob(t,dmg*1.4,true);
+        impactV6(t.x,t.y,a,true,'dagger');}
+      g.invuln=Math.max(g.invuln,.4);break;}
+    case 'poison':
+      v4HitArc(ang,200,1.1,dmg,{crit:true});
+      g.mobs.forEach(m=>{if(pointInCone(m.x,m.y,g.px,g.py,ang,200,1.1))m.poisonT=6});
+      for(let k=0;k<16;k++)burst(g.px+Math.cos(ang)*rand(30,190)+rand(-30,30),g.py+Math.sin(ang)*rand(30,190),'#a8e878',1);
+      break;
+    case 'bash':
+      v4HitAll(dmg,{crit:true,stun:2,break:true});nov(180);g.shake=13;
+      for(let k=0;k<26;k++)burst(g.px+rand(-90,90),g.py+rand(-50,50),col,2);
+      break;
+    case 'wall':
+      g.v6.wallT=6;g.buffs.guard=Math.max(g.buffs.guard,6);g.buffs.shield=Math.max(g.buffs.shield,6);
+      g.skillFx.push({t:1,max:1,kind:'buff',x:g.px,y:g.py,c:col,r:110});
+      announce('大地壁垒','减伤 · 反伤',1.2);break;
+    case 'flask':{
+      const tx=g.px+Math.cos(ang)*170,ty=g.py+Math.sin(ang)*170;
+      const kinds=['heal','atk','poison'];const kd=pick(kinds);
+      g.skillFx.push({t:.65,max:.65,kind:'nova',c:col,x:tx,y:ty,r:120});
+      g.mobs.forEach(m=>{if(dist(m.x,m.y,tx,ty)<120){hurtMob(m,dmg,true);if(kd==='poison')m.poisonT=5}});
+      if(g.boss&&!g.boss.dead&&dist(g.boss.x,g.boss.y,tx,ty)<140)hurtBoss(g.boss,dmg,true);
+      if(kd==='heal')g.hp=Math.min(g.maxhp,g.hp+g.maxhp*.12);
+      if(kd==='atk')g.v6.atkT=8;
+      for(let k=0;k<18;k++)burst(tx+rand(-50,50),ty+rand(-50,50),col,1);
+      g.shake=5;break;}
+    case 'coin':{
+      let hits=0;
+      g.mobs.forEach(m=>{hurtMob(m,dmg,true);hits++});
+      if(g.boss&&!g.boss.dead){hurtBoss(g.boss,dmg,true);hits++}
+      g.gold+=hits*2;
+      for(let k=0;k<10;k++)setTimeout(()=>{if(g.dead)return;
+        v6SlashV6(rand(0,TAU),150,col,true);sfx('coin')},k*80);
+      nov(220);g.shake=7;break;}
+    case 'firstaid':
+      g.hp=Math.min(g.maxhp,g.hp+g.maxhp*.18);
+      floatText(g.px,g.py-40,'+18%','#9cf0a8');
+      g.skillFx.push({t:.6,max:.6,kind:'heal',x:g.px,y:g.py,c:col});break;
+    case 'sprint':
+      g.buffs.spd=Math.max(g.buffs.spd,5);
+      g.skillFx.push({t:.6,max:.6,kind:'buff',x:g.px,y:g.py,c:col});break;
+    case 'warcry':
+      g.v6.atkT=6;g.buffs.atk=Math.max(g.buffs.atk,6);
+      announce('战吼','攻击力提升',1.1);
+      g.skillFx.push({t:.8,max:.8,kind:'buff',x:g.px,y:g.py,c:col,r:120});break;
+    case 'smoke':
+      g.v6.smokeT=3;
+      for(let k=0;k<28;k++)burst(g.px+rand(-90,90),g.py+rand(-70,70),'#b0b8d0',2);
+      g.skillFx.push({t:.8,max:.8,kind:'nova',x:g.px,y:g.py,r:170,c:col});
+      announce('烟幕','魔物失去目标 3 秒',1.2);break;
+  }
+  toast(s.n);
+  return true;
+}
+const _useSkillBase=useSkill;
+useSkill=function(i){if(useSkillV6(i))return;return _useSkillBase(i)};
+
+/* ============================================================
+   V6-F · 职业工坊 UI / 面板入口 / 样式 / 初始化
+   ============================================================ */
+const WORKSHOP_CSS=`
+.wkTabs{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 10px}
+.wkTabs .tab{padding:6px 10px;border-radius:8px;font-size:11px;border:1px solid rgba(120,190,255,.25);color:#a9c8e4;background:rgba(12,26,44,.6);cursor:pointer}
+.wkTabs .tab.on{background:rgba(255,210,120,.18);border-color:#ffd98a;color:#ffe0a0}
+.wkTabs .tab.lock{opacity:.45}
+.wkMat{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.wkMat span{font-size:10px;padding:4px 8px;border-radius:9px;background:rgba(20,40,64,.7);border:1px solid rgba(120,190,255,.2);color:#cfe6fa}
+.wkMat b{color:#ffd257}
+.wkBar{position:relative;height:16px;border-radius:9px;background:rgba(8,18,32,.9);border:1px solid rgba(140,190,240,.28);overflow:hidden;margin:8px 0}
+.wkBar i{display:block;height:100%;background:linear-gradient(90deg,#4a86c0,#ff9a40,#ffd257);transition:width .12s}
+.wkZone{position:absolute;top:0;bottom:0;left:62%;width:16%;background:rgba(255,215,110,.24);border-left:1px solid #ffd98a;border-right:1px solid #ffd98a}
+.wkPtrBar{position:relative;height:22px;border-radius:8px;background:rgba(8,18,32,.9);border:1px solid rgba(140,190,240,.28);margin:10px 0}
+.wkPtrBar .good{position:absolute;left:38%;width:24%;top:0;bottom:0;background:rgba(120,240,170,.22);border-left:1px solid #7cf0b0;border-right:1px solid #7cf0b0}
+.wkPtrBar .ptr{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff3c0;box-shadow:0 0 9px #ffd257;left:0}
+.wkRow{display:flex;gap:7px;align-items:center;margin:8px 0}
+.wkRow .btn{margin:0;flex:1}
+.wkSliders label{display:block;font-size:11px;color:#bfd8ee;margin:8px 0 2px}
+.wkSliders input[type=range]{width:100%;accent-color:#c9b0ff}
+.wkResult{margin:10px 0;padding:10px;border-radius:10px;border:1px solid rgba(255,215,130,.4);background:rgba(60,44,16,.4);font-size:11.5px;line-height:1.7;color:#ffe6b8}
+.wkPrice{font-size:11px;color:#ffd257}.up{color:#ff7a7a}.down{color:#7ce8a0}
+.lifeBadge{position:absolute;top:3px;right:3px;font-size:8px;padding:1px 5px;border-radius:6px;background:rgba(140,240,190,.22);color:#a8ffd0;border:1px solid rgba(140,240,190,.4)}
+.wkGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.wkNote{font-size:10.5px;line-height:1.7;color:#8fb0cc;margin:8px 0}
+`;
+(function(){const st=document.createElement('style');st.textContent=WORKSHOP_CSS;document.head.appendChild(st)})();
+
+/* 职业选择：11 职业 + 生活职业角标与玩法说明 */
+function classPickerHTMLV6(){
+  let h='<div class="clzPick">';
+  CLASSES.forEach(c=>{
+    h+=`<div class="clzCard ${SAVE.cls===c.id?'on':''}" data-cls="${c.id}">`+
+       (c.craft?'<div class="lifeBadge">生活</div>':'')+
+       `<img src="assets/img/class_${c.id}.webp" alt="${c.n}">`+
+       `<div class="cn">${c.n}</div><div class="cr">${c.role}</div></div>`;
+  });
+  h+='</div>';
+  const c=CLS();
+  const craftTip={forge:'锻造：采矿石 → 控炉温 → 节奏锤击 → 打出永久强化装备',
+    alchemy:'调合：三种材料不同配比调出不同药剂，配方要自己试出来',
+    trade:'行商：每层物价波动，低买高卖，把材料与产物卖给 NPC'};
+  h+=`<div class="clzDesc"><b style="color:${c.c}">${c.n} · ${c.role}</b><br>${c.desc}`+
+     `<br><span class="gold">生命 ×${c.hpM} · 攻击 ×${c.atkM} · 移速 ×${c.spdM} · 攻速 ×${c.rateM} · 暴击 ${Math.round(c.crit*100)}% · 射程 ${c.range}</span>`+
+     (c.craft?`<br><span style="color:#a8ffd0">◈ 专属玩法：${craftTip[c.craft]}。点右上角「工坊」进入。</span>`:'')+`</div>`;
+  return h;
+}
+classPickerHTMLV5=classPickerHTMLV6;
+
+/* ---------- 工坊 ---------- */
+let workTabV6='';
+const FORGE={temp:22,phase:'heat',hits:0,score:0,ptr:0,dir:1,raf:0,timer:0,result:''};
+function stopForgeTimersV6(){
+  if(FORGE.raf){cancelAnimationFrame(FORGE.raf);FORGE.raf=0}
+  if(FORGE.timer){clearInterval(FORGE.timer);FORGE.timer=0}
+}
+function resetForgeV6(){stopForgeTimersV6();FORGE.temp=22;FORGE.phase='heat';FORGE.hits=0;FORGE.score=0;FORGE.ptr=0;FORGE.dir=1;FORGE.result=''}
+function matLineV6(){
+  return '<div class="wkMat">'+MATS.map(m=>`<span style="border-color:${rgba(m.c,.42)}">${m.n} <b>${SAVE.mats[m.id]||0}</b></span>`).join('')+'</div>';
+}
+function renderWorkshopV6(body,tabs,compact){
+  stopForgeTimersV6();
+  const cls=CLS(),own=cls.craft;
+  if(!workTabV6)workTabV6=own||'forge';
+  const defs=[['forge','⚒ 锻造'],['alchemy','⚗ 调合'],['trade','✦ 行商']];
+  const tabHTML=defs.map(d=>`<div class="tab ${workTabV6===d[0]?'on':''} ${(d[0]!==own&&own)?'lock':''}" data-wtab="${d[0]}">${d[1]}</div>`).join('');
+  if(tabs){tabs.innerHTML=tabHTML;tabs.classList.add('wkTabs')}
+  let h=`<h3>职业工坊 · <span style="color:${cls.c}">${cls.n}</span></h3>`;
+  h+=`<div class="desc dim">不同职业有完全不同的玩法：战斗职业靠专属剑技与音色调性，生活职业靠采集、锻造、调合与行商。转职后已获得的材料、配方与装备全部保留。</div>`;
+  h+=matLineV6();
+  if(!tabs)h+=`<div class="wkTabs" id="wkTabsInline">${tabHTML}</div>`;
+  if(own&&workTabV6!==own)h+=`<div class="wkNote" style="color:#ffcf8a">◈ 当前是「${cls.n}」，此项非本职玩法：仍可操作，但产出效率较低；转职为对应职业可获得采集翻倍与最佳产出。</div>`;
+  h+='<div id="wkContent"></div>';
+  body.innerHTML=h;
+  const wire=()=>{
+    (tabs||body).querySelectorAll('[data-wtab]').forEach(t=>t.onclick=()=>{workTabV6=t.dataset.wtab;renderWorkshopV6(body,tabs,compact)});
+  };
+  wire();
+  const c=$('wkContent');
+  if(!c)return;
+  if(!own&&workTabV6!=='showcase'){
+    const tryMap={forge:'blacksmith',alchemy:'alchemist',trade:'merchant'};
+    c.innerHTML=`<div class="item"><div class="hd"><span class="nm">当前职业「${cls.n}」没有工坊玩法</span></div>
+      <div class="sub">工坊属于三个生活职业。转职完全免费、随时可切回，材料 / 配方 / 装备进度全部保留。点下面按钮可以直接转职体验。</div></div>`+
+      defs.map(d=>{
+        const tc=CLS_BY_ID[tryMap[d[0]]];
+        return `<div class="item ${workTabV6===d[0]?'':'locked'}"><div class="hd"><span class="nm">${d[1]}</span><span class="cost">${tc.n} 专属</span></div>
+        <div class="sub">${d[0]==='forge'?'采矿 → 控温 → 节奏锤击 → 永久强化装备':d[0]==='alchemy'?'材料配比调合 → 发现配方 → 炼出可用药剂':'每层行情波动 → 低买高卖 → 出售材料与产物'}</div>
+        <button class="btn sec sm" data-tryclass="${tc.id}" data-wtabgo="${d[0]}">转职为 ${tc.n} 并体验</button></div>`;
+      }).join('');
+    c.querySelectorAll('[data-tryclass]').forEach(b=>b.onclick=()=>{
+      setClassV5(b.dataset.tryclass);workTabV6=b.dataset.wtabgo;
+      renderWorkshopV6(body,tabs,compact);
+    });
+    return;
+  }
+  if(workTabV6==='forge')renderForgeV6(c,()=>renderWorkshopV6(body,tabs,compact));
+  else if(workTabV6==='alchemy')renderAlchemyV6(c,()=>renderWorkshopV6(body,tabs,compact));
+  else renderTradeV6(c,()=>renderWorkshopV6(body,tabs,compact));
+}
+/* ---------- 铁匠：控温 + 节奏锤击 ---------- */
+function renderForgeV6(c,refresh){
+  if(FORGE.phase==='done'){
+    c.innerHTML=`<div class="wkResult">${FORGE.result}</div>
+      <div class="desc dim">锻造等级 LV ${SAVE.craft.forgeLv} · 累计攻击强化 +${SAVE.craft.equip.atk.toFixed(1)} · 生命强化 +${SAVE.craft.equip.hp}</div>
+      <button class="btn sec sm" id="fgAgain">再锻一件</button>`;
+    $('fgAgain').onclick=()=>{resetForgeV6();refresh()};
+    return;
+  }
+  const costOK=(SAVE.mats.ore||0)>=3&&(SAVE.mats.crystal||0)>=1;
+  let h=`<div class="item"><div class="hd"><span class="nm">⚒ 炉火控温</span><span class="cost">需要 铁矿石×3 + 元素晶石×1</span></div>
+    <div class="sub">把炉温稳定在金色区间 <b class="gold">62% – 78%</b>，然后开始锻打。炉温会自然回落，鼓风每次随机升温。</div>
+    <div class="wkBar"><i id="fgFill" style="width:${FORGE.temp}%"></i><span class="wkZone"></span></div>
+    <div class="wkRow"><span class="wkPrice" id="fgTemp">${Math.round(FORGE.temp)}%</span>
+      <button class="btn sec sm" id="fgBlow">鼓风 +</button>
+      <button class="btn sm" id="fgStart" ${costOK?'':'disabled'}>开始锻打</button></div></div>`;
+  if(FORGE.phase==='hammer'){
+    h+=`<div class="item"><div class="hd"><span class="nm">🔨 节奏锤击</span><span class="cost">第 ${FORGE.hits+1} / 3 锤</span></div>
+      <div class="sub">指针进入绿色区时落锤。命中越准，成品品质越高，强化数值越大。</div>
+      <div class="wkPtrBar"><span class="good"></span><span class="ptr" id="fgPtr" style="left:${FORGE.ptr}%"></span></div>
+      <div class="wkRow"><button class="btn sm" id="fgHit">落锤</button></div></div>`;
+  }
+  h+=`<div class="wkNote">锻造产出的攻击 / 生命强化是<b class="gold">永久存档</b>的，切换到任何战斗职业都生效。锻造师采集矿石与晶石时数量翻倍。</div>`;
+  c.innerHTML=h;
+  const upd=()=>{
+    const f=$('fgFill'),t=$('fgTemp');
+    if(f)f.style.width=FORGE.temp+'%';if(t)t.textContent=Math.round(FORGE.temp)+'%';
+  };
+  $('fgBlow').onclick=()=>{FORGE.temp=clamp(FORGE.temp+rand(6,12),0,100);upd();try{sfxStyleV6('hammer','swing')}catch(e){}};
+  $('fgStart').onclick=()=>{
+    if(!costOK){toast('材料不足 · 到场景里采集发光的矿石与晶石');return}
+    if(FORGE.temp<62||FORGE.temp>78){toast('炉温不在 62%–78% 金色区间');return}
+    SAVE.mats.ore-=3;SAVE.mats.crystal-=1;saveGame();
+    FORGE.phase='hammer';FORGE.hits=0;FORGE.score=0;FORGE.ptr=0;FORGE.dir=1;
+    try{sfxStyleV6('hammer','forge')}catch(e){}
+    refresh();
+  };
+  if(FORGE.phase==='hammer'){
+    const tick=()=>{
+      const el=$('fgPtr');if(!el){FORGE.raf=0;return}
+      FORGE.ptr+=FORGE.dir*2.9;
+      if(FORGE.ptr>=100){FORGE.ptr=100;FORGE.dir=-1}
+      if(FORGE.ptr<=0){FORGE.ptr=0;FORGE.dir=1}
+      el.style.left=FORGE.ptr+'%';FORGE.raf=requestAnimationFrame(tick);
+    };
+    FORGE.raf=requestAnimationFrame(tick);
+    $('fgHit').onclick=()=>{
+      const d=Math.abs(FORGE.ptr-50);
+      const q=d<12?2:d<24?1:0;
+      FORGE.score+=q;FORGE.hits++;
+      try{sfxStyleV6('hammer','forge')}catch(e){}
+      flash(q===2?'#ffd257':'#8fb0cc',.13);
+      for(let i=0;i<8;i++)burst(W/2,H*.5,'#ffb070',1);
+      if(FORGE.hits>=3){finishForgeV6(refresh);return}
+      refresh();
+    };
+  }else{
+    FORGE.timer=setInterval(()=>{
+      const el=$('fgFill');if(!el){clearInterval(FORGE.timer);FORGE.timer=0;return}
+      FORGE.temp=Math.max(0,FORGE.temp-.75);upd();
+    },190);
+  }
+}
+function finishForgeV6(refresh){
+  stopForgeTimersV6();
+  const tempAcc=1-Math.abs(FORGE.temp-70)/70;
+  let q=clamp(.35+FORGE.score/6*.42+tempAcc*.23,.35,1.25);
+  if(CLS().craft!=='forge')q*=.72;   // 非锻造师：可玩但成品品质下降
+  const atk=+(q*2.4).toFixed(1),hp=Math.round(q*9);
+  SAVE.craft.forgeLv++;
+  SAVE.craft.equip.atk+=atk;SAVE.craft.equip.hp+=hp;
+  if(G&&!G.dead){G.atk+=atk;G.maxhp+=hp;G.hp+=hp}
+  saveGame();
+  const rank=q>1.05?'★★★ 传世':q>.8?'★★ 精良':q>.55?'★ 合格':'· 粗制';
+  FORGE.result=`锻造完成 · <b style="color:#ffd257">${rank}</b><br>攻击永久 +${atk} · 生命永久 +${hp}<br>锤击精度 ${FORGE.score}/6 · 炉温 ${Math.round(FORGE.temp)}%`;
+  FORGE.phase='done';
+  try{sfxStyleV6('hammer','forge')}catch(e){}
+  toast('锻造完成 · '+rank);refresh();
+}
+/* ---------- 炼金：配比调合 ---------- */
+const MIX={a:34,b:33,c:33,result:''};
+const MIX_MATS=['herb','crystal','dew'];
+function renderAlchemyV6(c,refresh){
+  const potions=SAVE.craft.potions||{};
+  const has=MIX_MATS.every(m=>(SAVE.mats[m]||0)>=1);
+  let h=`<div class="item"><div class="hd"><span class="nm">⚗ 材料配比</span><span class="cost">每次消耗 药草/晶石/晨露 各 1</span></div>
+    <div class="sub">拖动三条滑块改变配比，不同组合会调出<b class="gold">完全不同</b>的药剂。配方需要自己试错发现，失败也会留下记录。</div>
+    <div class="wkSliders">
+      <label>药草 <b id="mxA">${MIX.a}</b>%</label><input type="range" min="0" max="100" id="mxsA" value="${MIX.a}">
+      <label>元素晶石 <b id="mxB">${MIX.b}</b>%</label><input type="range" min="0" max="100" id="mxsB" value="${MIX.b}">
+      <label>晨露 <b id="mxC">${MIX.c}</b>%</label><input type="range" min="0" max="100" id="mxsC" value="${MIX.c}">
+    </div>
+    <div class="wkRow"><button class="btn sm" id="mxMake" ${has?'':'disabled'}>开始调合</button></div>
+    ${has?'':'<div class="wkNote" style="color:#ff9a9a">材料不足 · 到场景中采集发光材料点（炼金术师采集翻倍）</div>'}</div>`;
+  if(MIX.result)h+=`<div class="wkResult">${MIX.result}</div>`;
+  h+='<h3>配方图鉴 · '+SAVE.craft.known.length+' / '+RECIPES.length+'</h3>';
+  RECIPES.forEach(r=>{
+    const known=SAVE.craft.known.indexOf(r.n)>=0;
+    h+=`<div class="item ${known?'':'locked'}"><div class="hd"><span class="nm" style="color:${r.c}">${known?r.n:'？？？ 未发现配方'}</span><span class="cost">${known?r.r.join(' : '):'— : — : —'}</span></div>
+      <div class="sub">${known?r.eff:'调整三种材料配比，试着把它调出来'}</div></div>`;
+  });
+  h+='<h3>药剂包</h3>';
+  const keys=Object.keys(potions).filter(k=>potions[k]>0);
+  if(!keys.length)h+='<div class="wkNote">还没有药剂。调合成功后会出现在这里，可在攻略中随时使用。</div>';
+  keys.forEach(k=>{
+    const r=RECIPES.find(x=>x.n===k)||{eff:'',c:'#fff'};
+    h+=`<div class="item"><div class="hd"><span class="nm" style="color:${r.c}">${k} ×${potions[k]}</span><span class="cost">${r.eff}</span></div>
+      <button class="btn sec sm" data-use="${k}">使用（进入攻略后生效）</button></div>`;
+  });
+  c.innerHTML=h;
+  ['A','B','C'].forEach((K,i)=>{
+    const el=$('mxs'+K);if(!el)return;
+    el.oninput=()=>{MIX['abc'[i]]=+el.value;$('mx'+K).textContent=el.value};
+  });
+  const mk=$('mxMake');
+  if(mk)mk.onclick=()=>{
+    if(!MIX_MATS.every(m=>(SAVE.mats[m]||0)>=1)){toast('材料不足');return}
+    MIX_MATS.forEach(m=>SAVE.mats[m]--);
+    const sum=MIX.a+MIX.b+MIX.c||1;
+    const r=[MIX.a/sum*100,MIX.b/sum*100,MIX.c/sum*100];
+    let best=null,bd=1e9;
+    RECIPES.forEach(rc=>{const d=Math.hypot(r[0]-rc.r[0],r[1]-rc.r[1],r[2]-rc.r[2]);if(d<bd){bd=d;best=rc}});
+    const tol=CLS().craft==='alchemist'?best.tol:best.tol*.68;  // 非炼金术师：配比容差更窄
+    const hit=best&&bd<=tol?best:null;
+    const label=r.map(x=>Math.round(x)).join(' : ');
+    if(hit){
+      SAVE.craft.potions[hit.n]=(SAVE.craft.potions[hit.n]||0)+1;
+      if(SAVE.craft.known.indexOf(hit.n)<0){SAVE.craft.known.push(hit.n);MIX.result=`✦ <b style="color:${hit.c}">新配方发现 · ${hit.n}</b><br>配比 ${label} · ${hit.eff}`}
+      else MIX.result=`调合成功 · <b style="color:${hit.c}">${hit.n}</b> ×1<br>配比 ${label} · ${hit.eff}`;
+    }else{
+      MIX.result=`调合失败 · <b>浑浊液</b><br>配比 ${label} 未匹配任何已知配方（最近偏差 ${bd.toFixed(1)}）。换个比例再试试。`;
+    }
+    SAVE.craft.recipes.push({r:label,out:hit?hit.n:'浑浊液'});
+    if(SAVE.craft.recipes.length>40)SAVE.craft.recipes.shift();
+    saveGame();try{sfxStyleV6('flask','alchemy')}catch(e){}refresh();
+  };
+  c.querySelectorAll('[data-use]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.use;if(!(SAVE.craft.potions[k]>0))return;
+    if(!G||G.dead){toast('进入攻略后使用药剂');return}
+    SAVE.craft.potions[k]--;saveGame();
+    const r=RECIPES.find(x=>x.n===k);if(!r)return;
+    switch(r.kind){
+      case 'heal':G.hp=Math.min(G.maxhp,G.hp+G.maxhp*.45);break;
+      case 'sta':G.sta=G.maxsta;G.buffs.atk=Math.max(G.buffs.atk,8);break;
+      case 'atk':G.v6.atkT=12;break;
+      case 'guard':G.buffs.guard=8;G.buffs.shield=8;G.v6.wallT=8;break;
+      case 'spd':G.buffs.spd=10;break;
+      case 'poison':G.mobs.forEach(m=>m.poisonT=8);break;
+      case 'luck':SAVE.gold+=90+G.floor*8;SAVE.points++;break;
+    }
+    floatText(G.px,G.py-40,r.n,'#ffe6a8',true);
+    try{sfxStyleV6('flask','alchemy')}catch(e){}
+    toast('使用 '+r.n+' · '+r.eff);refresh();
+  });
+}
+/* ---------- 行商：物价波动 ---------- */
+function renderTradeV6(c,refresh){
+  if(!SAVE.craft.price)refreshMarketV6(SAVE.best||1);
+  const price=SAVE.craft.price,trend=SAVE.craft.trend||{},goods=SAVE.craft.goods||{};
+  let h=`<div class="item"><div class="hd"><span class="nm">✦ 第 ${SAVE.craft.lastFloor||1} 层行情</span><span class="cost">金币 ${Math.floor(SAVE.gold)}</span></div>
+    <div class="sub">每层物价都会重新波动。<b class="up">红涨</b>时卖出、<b class="down">绿跌</b>时买入，赚取差价；行商人采集材料翻倍，也能把锻造/炼金的产物直接卖掉。</div></div>`;
+  GOODS.forEach(g=>{
+    const p=price[g.id]||g.base,tr=trend[g.id]||0,own=goods[g.id]||0;
+    const buy=Math.ceil(p*(CLS().craft==='merchant'?1:1.12));  // 非行商人买入加价
+    const arrow=tr>0?`<span class="up">▲ +${tr}</span>`:tr<0?`<span class="down">▼ ${tr}</span>`:'<span class="dim">— 持平</span>';
+    h+=`<div class="item"><div class="hd"><span class="nm">${g.n}</span><span class="cost wkPrice">${p} 金 ${arrow}</span></div>
+      <div class="sub">持有 ${own} · 买入 ${buy} 金 · 卖出 ${Math.floor(p*.85)} 金${CLS().craft==='merchant'?'':' · 非行商人加价 12%'}</div>
+      <div class="wkRow"><button class="btn sec sm" data-buy="${g.id}" ${SAVE.gold<buy?'disabled':''}>买入 1</button>
+      <button class="btn sec sm" data-sell="${g.id}" ${own<1?'disabled':''}>卖出 1</button></div></div>`;
+  });
+  h+='<h3>出售材料</h3><div class="item"><div class="sub">把背包里的采集物按当前行情的 60% 一次性卖给 NPC。</div>';
+  MATS.forEach(m=>{
+    const n=SAVE.mats[m.id]||0;
+    h+=`<div class="wkRow"><span style="font-size:11px;color:${m.c};flex:1">${m.n} ×${n}</span>
+      <button class="btn sec sm" data-sellmat="${m.id}" ${n<1?'disabled':''}>全部卖出</button></div>`;
+  });
+  h+='</div><div class="wkNote">行商人的招牌技「金币风暴」命中越多魔物，掉落的金币越多；不打怪也能靠行情与买卖撑起整局补给。</div>';
+  c.innerHTML=h;
+  c.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.buy,p=Math.ceil((price[id]||10)*(CLS().craft==='merchant'?1:1.12));
+    if(SAVE.gold<p)return;
+    SAVE.gold-=p;SAVE.craft.goods[id]=(SAVE.craft.goods[id]||0)+1;saveGame();
+    try{sfxStyleV6('coin','trade')}catch(e){}toast('买入成功');refresh();
+  });
+  c.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.sell;if(!(SAVE.craft.goods[id]>0))return;
+    SAVE.craft.goods[id]--;SAVE.gold+=Math.floor((price[id]||10)*.85);saveGame();
+    try{sfxStyleV6('coin','trade')}catch(e){}toast('卖出成功');refresh();
+  });
+  c.querySelectorAll('[data-sellmat]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.sellmat,n=SAVE.mats[id]||0;if(n<1)return;
+    const p=price[id]||GOODS.find(g=>g.id===id)?.base||10;
+    const gain=Math.floor(n*p*.6);
+    SAVE.mats[id]=0;SAVE.gold+=gain;
+    if(G&&!G.dead)G.gold+=gain;
+    saveGame();try{sfxStyleV6('coin','trade')}catch(e){}toast('售出 +'+gain+' 金');refresh();
+  });
+}
+/* ---------- 面板 / 营地入口 ---------- */
+const _openPanelBase=openPanel;
+openPanel=function(kind){
+  if(kind==='craft'){
+    panelKind='craft';pauseForPanel();
+    $('scPanel').classList.add('on');
+    $('panelTitle').textContent='职业工坊';
+    $('panelSub').textContent='采集 · 锻造 · 调合 · 行商 —— 不同职业不同玩法';
+    renderWorkshopV6($('panelBody'),$('panelTabs'),false);
+    return;
+  }
+  _openPanelBase(kind);
+};
+const _renderCampBase=renderCamp;
+renderCamp=function(){
+  if(campTab==='work'){
+    document.querySelectorAll('[data-camp]').forEach(t=>t.classList.toggle('on',t.dataset.camp===campTab));
+    renderWorkshopV6($('campBody'),null,true);
+    return;
+  }
+  _renderCampBase();
+};
+/* ---------- DOM 入口 ---------- */
+(function(){
+  const mini=$('mini');
+  if(mini&&!$('mbCraft')){
+    const b=document.createElement('div');b.className='mb pe';b.id='mbCraft';b.textContent='工坊';
+    b.onclick=()=>openPanel('craft');mini.appendChild(b);
+  }
+  const ct=document.querySelector('#scCamp .tabs');
+  if(ct&&!ct.querySelector('[data-camp="work"]')){
+    const t=document.createElement('div');t.className='tab';t.dataset.camp='work';t.textContent='工坊';ct.appendChild(t);
+  }
+})();
+/* 启动整理 */
+normalizeSkillsV6();
+refreshMarketV6(SAVE.best||1);
+if(typeof buildSkillBar==='function')buildSkillBar();
+/* 让蓄力球与元气弹特效进入绘制链 */
+const _drawV4BaseFinal=drawV4;
+drawV4=function(g){
+  _drawV4BaseFinal(g);
+  if(typeof drawChargeV6==='function')drawChargeV6(g);
+};
+
+/* ===================== V6 END ===================== */
 initInputV5();
 loadArt();
 if(ART.ready)onArtReadyV5();
