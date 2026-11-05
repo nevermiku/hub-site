@@ -1,9 +1,9 @@
 {
   "appid": "__UNI__PROJECTHUB",
   "name": "项目中枢",
-  "version": "1.2.2",
-  "versionCode": "122",
+  "version": "1.2.3",
+  "versionCode": "123",
   "wgtUrl": "https://nevermiku.github.io/hub-site/hub-app/projecthub.wgt",
-  "md5": "1620256db43b8a7c87d90a68f3bb46ba",
-  "note": "1.2.2 语速放慢/桌宠真人走路/拖拽修复/内置BGM点击即播/语音包提前入口/背景主题全页生效"
+  "md5": "97babd7ef0a0654801b82996a5d289e5",
+  "note": "1.2.3 新增番茄钟专注计时器 + 备份恢复（导入JSON）；保留语速放慢/真人走路/内置BGM等 1.2.2 全部修复"
 }
