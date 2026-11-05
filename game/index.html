@@ -4015,6 +4015,9 @@ applyClassV5=function(){_applyClassV5Base();normalizeSkillsV6()};
 const _setClassV5Base=setClassV5;
 setClassV5=function(id){
   _setClassV5Base(id);normalizeSkillsV6();
+  // 转职到尚未补载完的职业时，立即按需拉取该立绘
+  if(typeof ART!=='undefined'&&typeof fetchImgV6==='function'&&!ART.img['class_'+id])
+    fetchImgV6('class_'+id,'assets/img/class_'+id+'.webp');
   if(typeof sfxClassV6==='function')sfxClassV6('change');
   if(typeof toast==='function'){const c=CLS();toast('已转职 · '+c.n+(c.craft?' · 工坊已开放':''))}
 };
