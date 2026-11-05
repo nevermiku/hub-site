@@ -1,11 +1,11 @@
 {
-  "name": "刀域突围 · SWORD BREAK",
+  "name": "刀域突围 · 百层浮游城",
   "short_name": "刀域突围",
-  "description": "幸存者类 Roguelite 小游戏：怪物一波比一波强，看你能活多久。",
+  "description": "100 层全矢量动作 RPG：格挡弹反、技能树、AI 组队与组合技，横竖屏皆可。",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#04080f",
   "theme_color": "#04080f",
   "icons": [
