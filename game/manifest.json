@@ -1,15 +1,23 @@
 {
-  "name": "刀域突围 · SWORD BREAK",
+  "name": "刀域突围 · 百层浮游城",
   "short_name": "刀域突围",
-  "description": "幸存者类 Roguelite 小游戏：怪物一波比一波强，看你能活多久。",
+  "description": "100 层 100 名层主 · 实体动画 · 格挡弹反 · 33 技能 · CloudBase 真联机，横竖屏皆可。",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "orientation": "portrait",
-  "background_color": "#04080f",
-  "theme_color": "#04080f",
+  "orientation": "any",
+  "background_color": "#05070d",
+  "theme_color": "#05070d",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
