@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0d1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="screen-orientation" content="landscape">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>刀域突围 3D · 百层浮游城</title>
+<style>
+:root{
+  --accent:#9be36b; --accent2:#7fd8ff; --bg:#0d1622; --card:rgba(15,25,38,.92);
+  --line:rgba(255,255,255,.13); --txt:#eaf2fb; --sub:#9fb0c4; --gold:#ffd070;
+  --red:#ff6a7a; --green:#7fe0a0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);
+  color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ui{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.hidden{display:none!important}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.pe{pointer-events:auto}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none}
+.hudTL{position:absolute;left:14px;top:12px;min-width:210px}
+.floorTag{display:flex;align-items:baseline;gap:8px;text-shadow:0 2px 8px #000}
+.floorNum{font-size:26px;font-weight:800;letter-spacing:1px;color:#fff}
+.floorName{font-size:12px;color:#dbe8f5;opacity:.9}
+.floorStory{font-size:10px;color:var(--sub);margin-top:2px;max-width:250px;line-height:1.4;text-shadow:0 1px 5px #000}
+.bar{height:9px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--line);overflow:hidden;margin-top:8px;position:relative}
+.bar>i{display:block;height:100%;border-radius:5px;transition:width .18s linear}
+.bar.hp>i{background:linear-gradient(90deg,#ff5c6c,#ff9b6a)}
+.bar.exp{height:5px;margin-top:5px}.bar.exp>i{background:linear-gradient(90deg,#7fd8ff,#a88cff)}
+.barLb{position:absolute;inset:0;text-align:center;font-size:8px;line-height:9px;color:#fff;text-shadow:0 1px 2px #000;letter-spacing:.5px}
+.statRow{display:flex;gap:10px;font-size:10px;color:#c8d8e8;margin-top:6px;text-shadow:0 1px 4px #000}
+.hudTR{position:absolute;right:12px;top:12px;text-align:right}
+.chip{display:inline-flex;align-items:center;gap:5px;background:rgba(8,16,26,.72);border:1px solid var(--line);
+  border-radius:16px;padding:5px 11px;font-size:11px;margin-left:5px;backdrop-filter:blur(6px)}
+.chip b{color:var(--gold)}
+#btnMenu{pointer-events:auto}
+#minimap{position:absolute;right:12px;top:52px;width:132px;height:132px;border-radius:12px;
+  background:rgba(8,16,26,.66);border:1px solid var(--line);backdrop-filter:blur(6px)}
+#minimap canvas{width:100%;height:100%;border-radius:12px;display:block}
+#combo{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-weight:900;font-size:30px;
+  color:#ffd070;text-shadow:0 3px 16px #000,0 0 22px #ff9a3a;opacity:0;transition:opacity .2s}
+#combo.on{opacity:1}
+
+/* ---------- 摇杆 ---------- */
+#joy{position:absolute;left:20px;bottom:22px;width:116px;height:116px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.22);background:radial-gradient(circle,rgba(255,255,255,.07),rgba(0,0,0,.22));
+  opacity:0;transition:opacity .15s}
+#joy.on{opacity:1}
+#joyKnob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.5),rgba(160,200,255,.28));
+  border:2px solid rgba(255,255,255,.55);box-shadow:0 3px 14px rgba(0,0,0,.5)}
+
+/* ---------- 技能栏 / 动作区 ---------- */
+#bottom{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;align-items:flex-end;gap:10px}
+#skillbar{display:flex;gap:8px;pointer-events:auto;background:rgba(8,16,26,.60);padding:8px 10px;border-radius:16px;
+  border:1px solid var(--line);backdrop-filter:blur(8px)}
+.sk{position:relative;width:52px;height:52px;border-radius:13px;border:1px solid var(--line);
+  background:linear-gradient(160deg,rgba(60,86,120,.75),rgba(20,32,50,.85));display:flex;flex-direction:column;
+  align-items:center;justify-content:center;overflow:hidden;transition:transform .08s}
+.sk:active{transform:scale(.92)}
+.sk .ico{font-size:20px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.sk .nm{font-size:8px;margin-top:2px;white-space:nowrap;color:#dce8f5}
+.sk .cd{position:absolute;inset:0;background:rgba(4,10,18,.78);display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff}
+.sk .num{position:absolute;top:2px;left:4px;font-size:8px;color:var(--sub)}
+.sk.base{background:linear-gradient(160deg,rgba(90,80,60,.75),rgba(40,32,24,.85))}
+#actions{display:flex;gap:8px;pointer-events:auto;align-items:flex-end}
+.ab{width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.25);
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.22),rgba(16,28,44,.86));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45);transition:transform .08s}
+.ab:active{transform:scale(.9)}
+.ab .ico{font-size:21px;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}.ab .nm{font-size:8px;color:#dce8f5;margin-top:1px}
+.ab.atk{width:72px;height:72px;border-color:var(--accent);background:radial-gradient(circle at 35% 30%,rgba(255,220,140,.35),rgba(60,36,20,.88))}
+.ab.atk .ico{font-size:27px}
+.ab.small{width:46px;height:46px}
+.ab.small .ico{font-size:16px}
+
+#interactHint{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);
+  background:rgba(8,16,26,.82);border:1px solid var(--accent);border-radius:20px;padding:7px 16px;
+  font-size:12px;color:#fff;pointer-events:auto;box-shadow:0 0 18px rgba(155,227,107,.25)}
+#interactHint .k{display:inline-block;background:var(--accent);color:#10200c;border-radius:5px;padding:1px 6px;font-weight:800;margin-right:6px;font-size:10px}
+
+/* ---------- 浮字 / toast ---------- */
+#floats{position:absolute;inset:0;overflow:hidden}
+.flt{position:absolute;font-weight:800;font-size:16px;color:#fff;text-shadow:0 2px 6px #000,0 0 10px rgba(0,0,0,.8);
+  transform:translate(-50%,-50%);animation:fltUp .95s ease-out forwards;white-space:nowrap}
+.flt.big{font-size:24px}
+@keyframes fltUp{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-70%) scale(1.15)}
+  100%{opacity:0;transform:translate(-50%,-190%) scale(1)}}
+#toasts{position:absolute;left:50%;top:14%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{background:rgba(8,16,26,.9);border:1px solid var(--line);border-left:3px solid var(--accent2);
+  padding:8px 16px;border-radius:10px;font-size:12px;max-width:80vw;text-align:center;
+  box-shadow:0 6px 22px rgba(0,0,0,.5);animation:tIn .25s ease-out}
+.toast.ok{border-left-color:var(--green)}.toast.warn{border-left-color:var(--red)}.toast.info{border-left-color:var(--accent2)}
+@keyframes tIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+
+/* ---------- Boss 血条 / 演出 ---------- */
+#bossBar{position:absolute;left:50%;top:62px;transform:translateX(-50%);width:min(520px,72vw);text-align:center}
+#bossBar .bn{font-size:15px;font-weight:800;letter-spacing:2px;text-shadow:0 2px 8px #000}
+#bossBar .bt{font-size:10px;color:#ffd0a0;margin-bottom:5px}
+#bossBar .bar{height:12px;border-color:rgba(255,150,120,.5)}
+#bossBar .bar>i{background:linear-gradient(90deg,#e84050,#ff9a4a)}
+#bossIntro{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.42) 0%,rgba(0,0,0,.91) 80%)}
+#bossIntro .bi1{font-size:12px;letter-spacing:8px;color:#ffbc8a;margin-bottom:10px}
+#bossIntro .bi2{font-size:min(9vw,54px);font-weight:900;letter-spacing:6px;color:#fff;
+  text-shadow:0 0 30px rgba(255,120,60,.8),0 4px 20px #000;animation:biIn .8s ease-out}
+#bossIntro .bi3{margin-top:14px;font-size:13px;color:#ffd0a0;letter-spacing:4px}
+#bossIntro .bi4{margin-top:22px;width:220px;height:3px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+#bossIntro .bi4 i{display:block;height:100%;background:#ffb060;animation:biBar 4.2s linear forwards}
+@keyframes biIn{from{opacity:0;transform:scale(1.4)}to{opacity:1;transform:none}}
+@keyframes biBar{from{width:0}to{width:100%}}
+#gateFx{position:absolute;inset:0;background:#fff;opacity:0}
+#dmgFlash{position:absolute;inset:0;box-shadow:inset 0 0 120px rgba(255,40,50,.8);opacity:0;transition:opacity .3s}
+
+/* ---------- 屏幕 / 面板 ---------- */
+.screen{position:absolute;inset:0;pointer-events:auto;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,rgba(8,14,24,.94),rgba(10,20,34,.97));overflow:auto;padding:16px}
+#title{background:radial-gradient(ellipse at 30% 20%,#1b3550 0%,#0a1220 55%,#070c14 100%)}
+.titleBox{width:min(940px,96vw);text-align:center}
+.logo{font-size:min(7vw,46px);font-weight:900;letter-spacing:8px;
+  background:linear-gradient(90deg,#ffe3a0,#ff9a70,#a8d8ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 18px rgba(255,180,100,.35))}
+.logoSub{font-size:12px;letter-spacing:6px;color:#a8bdd4;margin-top:6px}
+.tagline{font-size:12px;color:var(--sub);margin:14px auto 20px;max-width:640px;line-height:1.8}
+.bigBtn{display:inline-block;padding:13px 40px;border-radius:26px;font-size:16px;font-weight:800;letter-spacing:3px;
+  background:linear-gradient(100deg,#ffd070,#ff9a60);color:#211408;box-shadow:0 6px 24px rgba(255,160,80,.35);margin:6px}
+.secBtn{display:inline-block;padding:10px 22px;border-radius:20px;font-size:12px;border:1px solid var(--line);
+  background:rgba(255,255,255,.06);margin:5px}
+.clsTabs{display:flex;gap:6px;justify-content:center;margin:16px 0 10px;flex-wrap:wrap}
+.clsTab{padding:6px 16px;border-radius:16px;font-size:12px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.clsTab.on{background:var(--accent);color:#10200c;font-weight:800;border-color:var(--accent)}
+.clsGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px;max-height:44vh;overflow:auto;padding:4px}
+.clsCard{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;background:rgba(255,255,255,.035);
+  transition:transform .12s,border-color .12s;min-height:92px}
+.clsCard:hover{transform:translateY(-2px);border-color:var(--accent)}
+.clsCard.on{border-color:var(--accent);background:rgba(155,227,107,.10);box-shadow:0 0 0 1px var(--accent) inset}
+.clsCard .h{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800}
+.clsCard .dot{width:9px;height:9px;border-radius:50%}
+.clsCard .en{font-size:9px;color:var(--sub);margin:3px 0 5px}
+.clsCard .d{font-size:10px;color:#b8c8da;line-height:1.45}
+.clsCard .tag{display:inline-block;font-size:8px;padding:1px 6px;border-radius:8px;margin-top:5px;
+  background:rgba(255,255,255,.09);color:#c8d8e8}
+
+.panel{width:min(900px,96vw);max-height:92vh;background:var(--card);border:1px solid var(--line);
+  border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.7);overflow:hidden;display:flex;flex-direction:column}
+.pHead{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(255,208,112,.09),transparent)}
+.pTitle{font-size:16px;font-weight:800;letter-spacing:2px}
+.pClose{font-size:22px;line-height:1;color:var(--sub);padding:2px 8px}
+.pTabs{display:flex;gap:5px;padding:10px 14px;border-bottom:1px solid var(--line);overflow-x:auto;flex-wrap:wrap}
+.pTab{padding:6px 13px;border-radius:14px;font-size:11px;border:1px solid var(--line);white-space:nowrap}
+.pTab.on{background:var(--accent);color:#10200c;font-weight:800;border-color:var(--accent)}
+.pBody{padding:14px 18px;overflow:auto;flex:1;min-height:120px}
+.item{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:9px;background:rgba(255,255,255,.03)}
+.item .hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.item .nm{font-size:13px;font-weight:700}
+.item .sub{font-size:10px;color:var(--sub);margin-top:4px;line-height:1.5}
+.item .cost{font-size:11px;color:var(--gold)}
+.btn{display:inline-block;padding:7px 14px;border-radius:9px;font-size:11px;font-weight:700;
+  background:linear-gradient(100deg,var(--accent),#6fc8a0);color:#0e2010;margin:3px 5px 0 0}
+.btn.sec{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid var(--line)}
+.btn.sm{padding:5px 10px;font-size:10px}
+.btn:disabled{opacity:.4}
+.mats{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mat{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid var(--line);
+  border-radius:14px;padding:4px 10px;font-size:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px}
+.note{font-size:11px;color:var(--sub);line-height:1.7;background:rgba(255,255,255,.04);
+  border-left:2px solid var(--accent2);padding:8px 12px;border-radius:0 8px 8px 0;margin:8px 0}
+.qBadge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:800;margin-right:6px}
+
+/* ---------- 生活玩法 ---------- */
+.playStage{background:rgba(4,10,18,.55);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.playTitle{font-size:14px;font-weight:800;letter-spacing:1px;margin-bottom:4px}
+.playHint{font-size:11px;color:var(--sub);line-height:1.6;margin-bottom:10px}
+.sliderRow{display:flex;align-items:center;gap:10px;margin:9px 0}
+.sliderRow label{width:74px;font-size:11px;flex-shrink:0}
+.sliderRow input{flex:1;accent-color:var(--accent);height:20px}
+.sliderRow .val{width:44px;text-align:right;font-size:12px;font-weight:800;color:var(--gold)}
+.timingTrack{position:relative;height:38px;border-radius:9px;background:linear-gradient(90deg,#26364a,#1a2838);
+  border:1px solid var(--line);overflow:hidden;margin:10px 0}
+.timingZone{position:absolute;top:0;bottom:0;background:rgba(126,224,160,.28);border-left:2px solid #7fe0a0;border-right:2px solid #7fe0a0}
+.timingNeedle{position:absolute;top:-3px;bottom:-3px;width:4px;background:#ffd070;box-shadow:0 0 12px #ffd070;border-radius:3px}
+.timingMark{position:absolute;top:8px;width:3px;height:22px;background:#7fe0a0;border-radius:2px;opacity:.7}
+.seqGrid{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.seqBtn{width:46px;height:46px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);
+  font-size:19px;display:flex;align-items:center;justify-content:center}
+.seqBtn.on{background:var(--accent);color:#10200c}
+.seqBtn.flash{background:var(--accent2);color:#08131e}
+.aseGrid{display:grid;gap:5px;justify-content:center;margin:10px auto}
+.aseCell{aspect-ratio:1;border-radius:7px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:18px}
+.aseCell.on{background:var(--accent);box-shadow:0 0 12px rgba(155,227,107,.5)}
+.collectField{position:relative;height:190px;border-radius:12px;border:1px solid var(--line);
+  background:radial-gradient(circle at 50% 50%,rgba(40,70,100,.35),rgba(6,12,22,.6));overflow:hidden}
+.collectDot{position:absolute;width:34px;height:34px;border-radius:50%;font-size:16px;display:flex;
+  align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#ffe9a8,#ffab4a);
+  box-shadow:0 0 16px rgba(255,180,80,.7);transform:translate(-50%,-50%)}
+.marketRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.marketRow .up{color:#ff8a7a}.marketRow .down{color:#7fe0a0}.marketRow .dim{color:var(--sub)}
+.resultBox{text-align:center;padding:14px;border-radius:12px;background:rgba(155,227,107,.09);
+  border:1px solid var(--accent);margin-top:10px}
+.resultBox .r1{font-size:20px;font-weight:900;color:var(--gold)}
+.resultBox .r2{font-size:11px;color:var(--sub);margin-top:5px;line-height:1.6}
+
+/* ---------- 竖屏适配 ---------- */
+@media (orientation:portrait){
+  .hudTL{min-width:160px}.floorNum{font-size:20px}.floorStory{max-width:170px}
+  #minimap{width:104px;height:104px;top:48px}
+  #bottom{bottom:10px;gap:5px;flex-wrap:wrap}
+  #skillbar{gap:5px;padding:6px}.sk{width:44px;height:44px}.sk .ico{font-size:17px}
+  .ab{width:50px;height:50px}.ab.atk{width:62px;height:62px}
+  #joy{width:96px;height:96px;left:12px;bottom:96px}
+  #interactHint{bottom:150px}
+  .clsGrid{max-height:38vh}
+}
+@media (max-height:430px){
+  .hudTL{top:6px}.floorNum{font-size:19px}.floorStory{display:none}
+  #minimap{width:96px;height:96px;top:42px}
+  #bossBar{top:44px}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="ui">
+  <div id="hud">
+    <div class="hudTL">
+      <div class="floorTag"><span class="floorNum" id="floorNum">第 1 层</span><span class="floorName" id="floorName">起始之野</span></div>
+      <div class="floorStory" id="floorStory"></div>
+      <div class="bar hp"><i id="hpBar" style="width:100%"></i><span class="barLb" id="hpLb">100 / 100</span></div>
+      <div class="bar exp"><i id="expBar" style="width:0%"></i></div>
+      <div class="statRow"><span id="statLv">Lv.1</span><span id="statAtk">⚔ 0</span><span id="statDef">🛡 0</span><span id="statCls">剑士</span></div>
+    </div>
+    <div class="hudTR">
+      <span class="chip">💰 <b id="goldTxt">0</b></span>
+      <button class="chip" id="btnMenu">☰ 菜单</button>
+      <button class="chip" id="btnBag2">🎒</button>
+      <div id="minimap"><canvas id="mapCanvas" width="264" height="264"></canvas></div>
+    </div>
+    <div id="bossBar" class="hidden"><div class="bn" id="bossName"></div><div class="bt" id="bossTitle"></div>
+      <div class="bar"><i id="bossHpBar" style="width:100%"></i></div></div>
+    <div id="combo"></div>
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div id="bottom">
+      <div id="skillbar"></div>
+      <div id="actions"></div>
+    </div>
+    <div id="interactHint" class="hidden"></div>
+    <div id="floats"></div>
+    <div id="toasts"></div>
+    <div id="dmgFlash"></div>
+    <div id="bossIntro" class="hidden"></div>
+    <div id="gateFx"></div>
+  </div>
+
+  <!-- 标题页 -->
+  <div id="title" class="screen">
+    <div class="titleBox">
+      <div class="logo">刀 域 突 围</div>
+      <div class="logoSub">AINCRAD 3D · 百层浮游城</div>
+      <div class="tagline">真 3D 开放场景 · 第三人称自由探索 · 14 战斗职业 / 24 生活职业<br>
+        100 层 16 种地貌 · 层主之门随机藏于场景之中 · 装备掉落与品质 · 职业专属音效</div>
+      <div class="clsTabs">
+        <button class="clsTab on" data-ctab="combat">⚔ 战斗职业 14</button>
+        <button class="clsTab" data-ctab="life">🛠 生活职业 24</button>
+      </div>
+      <div class="clsGrid" id="clsGrid"></div>
+      <div style="margin-top:16px">
+        <button class="bigBtn" id="btnStart">进 入 浮 游 城</button>
+      </div>
+      <div>
+        <button class="secBtn" id="btnContinue">继续冒险（第 <span id="contFloor">1</span> 层）</button>
+        <button class="secBtn" id="btnHelp">操作说明</button>
+      </div>
+      <div style="font-size:10px;color:#7d8ea2;margin-top:12px">建议横屏 · 可添加到主屏幕作为 APP 全屏运行 · 原创 3D / CC0 音效</div>
+    </div>
+  </div>
+
+  <!-- 通用面板 -->
+  <div id="panel" class="screen hidden">
+    <div class="panel">
+      <div class="pHead"><div class="pTitle" id="pTitle">面板</div><button class="pClose" id="pClose">×</button></div>
+      <div class="pTabs" id="pTabs"></div>
+      <div class="pBody" id="pBody"></div>
+    </div>
+  </div>
+
+  <!-- 死亡 -->
+  <div id="dead" class="screen hidden">
+    <div class="titleBox">
+      <div style="font-size:52px;font-weight:900;color:#ff6a7a;letter-spacing:10px;text-shadow:0 0 30px rgba(255,60,80,.5)">DEAD</div>
+      <div style="font-size:13px;color:#b8c8da;margin:14px 0 24px">你在第 <span id="deadFloor">1</span> 层倒下了。<br>浮游城不会等人，但你可以再来一次。</div>
+      <button class="bigBtn" id="btnRevive">重 返 战 场</button>
+      <button class="secBtn" id="btnToTitle">返回标题</button>
+    </div>
+  </div>
+</div>
+<script src="./game.js"></script>
+</body>
+</html>
