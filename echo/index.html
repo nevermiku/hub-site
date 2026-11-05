@@ -36,7 +36,7 @@ canvas{display:block;width:100vw;height:100vh}
   <div id="top">第 <span id="wave">1</span> 波 · 回声延迟 <span id="delay">3.0</span>s</div>
   <div id="score">0</div>
   <div id="echoTag">◈ 回声已同步</div>
-  <div id="tip" style="display:none"></div>
+  <div id="tip"></div>
 </div>
 <div class="screen" id="start">
   <h1>回 声</h1>
@@ -104,6 +104,21 @@ const HISTORY_MAX=Math.ceil(DELAY*1000/16); // 帧历史容量
 let G=null,running=false,lastT=0;
 const ECHO_COLORS=['#ff9a6f','#c9a0ff','#7fd8ff'];
 
+const TIPS=[
+  '滑动屏幕（或方向键）移动，一次走一格',
+  '◈ 你走过的路，3 秒后会有回声重走一遍',
+  '被方块和回声围死 2 秒 = 消散，永远给自己留退路',
+  '吃到发光的核心得分，每 5 颗进入下一波',
+  '高波数后棋盘会「地质滑动」，注意脚下变化',
+];
+let tipIdx=0,tipT=0;
+function tickTip(dt){
+  const el=document.getElementById('tip');
+  tipT-=dt;
+  if(tipT<=0){tipT=4.5;el.style.opacity='0';
+    setTimeout(()=>{el.textContent=TIPS[tipIdx%TIPS.length];tipIdx++;el.style.opacity='1'},300);
+  }
+}
 function newGame(){
   buildGrid();
   const g={
@@ -117,7 +132,7 @@ function newGame(){
     cores:[],             // 核心
     particles:[],
     score:0,wave:1,coresGot:0,
-    shake:0,dead:false,stuckT:0,
+    shake:0,dead:false,slideOff:null,slideT:0,slideCd:14,slideDir:null,stuckT:0,
     spawnT:0,
   };
   // 初始布局：中心留空，四周散布方块
@@ -188,6 +203,11 @@ function burst(g,gx,gy,c,n){
   for(let i=0;i<n;i++)g.particles.push({x:gx*CS+CS/2+OX,y:gy*CS+CS/2+OY,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,t:.5,c});
 }
 
+let annT=null;
+function announce2(txt){
+  const el=document.getElementById('echoTag');el.textContent=txt;el.classList.add('on');
+  clearTimeout(annT);annT=setTimeout(()=>el.classList.remove('on'),1800);
+}
 /* ---- 更新 ---- */
 function update(dt){
   const g=G;if(g.dead)return;
@@ -262,6 +282,30 @@ function update(dt){
     if(free===0){ g.stuckT+=dt; if(g.stuckT>2){gameOver();return} }
     else g.stuckT=Math.max(0,g.stuckT-dt*2);
   }
+  // ---- 地质滑动：第 3 波起，棋盘每隔一段时间整体滑动一格 ----
+  if(g.wave>=3){
+    g.slideCd-=dt;
+    if(g.slideCd<=0&&!g.slideOff){
+      g.slideCd=16;
+      const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+      g.slideDir=dirs[Math.floor(Math.random()*4)];
+      g.slideT=.45;
+      // 数据层立刻换位（环形滚动）：方块与核心
+      const [sdx,sdy]=g.slideDir;
+      const wrap=(v,max)=>((v%max)+max)%max;
+      for(const b of g.blocks){b.x=wrap(b.x+sdx,COLS);b.y=wrap(b.y+sdy,ROWS)}
+      for(const c of g.cores){c.x=wrap(c.x+sdx,COLS);c.y=wrap(c.y+sdy,ROWS)}
+      // 滑到玩家身上的方块：被玩家原地撞碎
+      const onP=g.blocks.filter(b=>b.x===Math.round(g.px)&&b.y===Math.round(g.py));
+      for(const b of onP){g.blocks.splice(g.blocks.indexOf(b),1);burst(g,b.x,b.y,'#6f8fff',12);g.shake=5}
+      announce2('⚠ 地质变动 · 棋盘'+(sdx===1?'右滑':sdx===-1?'左滑':sdy===1?'下滑':'上滑'));
+      sfx.sync();
+    }
+  }
+  if(g.slideT>0){g.slideT-=dt;const p=1-Math.max(0,g.slideT)/.45;
+    g.slideOff={x:g.slideDir[0]*(1-p)*-CS,y:g.slideDir[1]*(1-p)*-CS};
+    if(g.slideT<=0)g.slideOff=null;
+  }else if(!g.slideOff){g.slideOff=null}
   // 方块抖动衰减，方块会「再生」（压力）
   g.spawnT-=dt;
   if(g.spawnT<=0){
@@ -289,6 +333,7 @@ function draw(){
   ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);
 
   ctx.save();
+  if(g.slideOff)ctx.translate(g.slideOff.x,g.slideOff.y);
   if(g.shake>0)ctx.translate((Math.random()-.5)*g.shake,(Math.random()-.5)*g.shake);
   // 网格线
   ctx.strokeStyle='rgba(120,150,255,.10)';ctx.lineWidth=1;
@@ -387,7 +432,7 @@ function loop(t){
   requestAnimationFrame(loop);
   const dt=Math.max(0,Math.min(.05,(t-lastT)/1000));lastT=t;
   if(!running||!G)return;
-  update(dt);draw();
+  update(dt);draw();tickTip(dt);
 }
 requestAnimationFrame(t=>{lastT=t;loop(t)});
 
