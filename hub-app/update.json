@@ -1,9 +1,9 @@
 {
   "appid": "__UNI__PROJECTHUB",
   "name": "项目中枢",
-  "version": "1.2.3",
-  "versionCode": "123",
+  "version": "1.2.4",
+  "versionCode": "124",
   "wgtUrl": "https://nevermiku.github.io/hub-site/hub-app/projecthub.wgt",
-  "md5": "97babd7ef0a0654801b82996a5d289e5",
-  "note": "1.2.3 新增番茄钟专注计时器 + 备份恢复（导入JSON）；保留语速放慢/真人走路/内置BGM等 1.2.2 全部修复"
+  "md5": "33369e00205806403868429ffd67a844",
+  "note": "1.2.4 修复版本自更新失效：构建号注入修复/版本检查重试3次/个人中心新增手动检查更新按钮与版本号显示"
 }

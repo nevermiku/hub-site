@@ -25,7 +25,7 @@
   #boot-splash img{width:84px;height:84px;animation:pulse 1.6s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
 </style>
-  <script type="module" crossorigin src="./assets/index-v9uubmAt.js"></script>
+  <script type="module" crossorigin src="./assets/index-DpXIRBUR.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-BVpF8fsk.css">
 </head>
 <body>
@@ -48,7 +48,7 @@
   /* ===== 版本自更新：不依赖 Service Worker 缓存 =====
      App 是 WebView 壳，旧 SW 会长期保留旧资源。这里每次启动都用 no-store 拉一个
      极小的 version.json（永不被缓存），发现版本不一致就清空全部缓存并硬刷新一次。 */
-  window.__PH_BUILD__ = 'ph-1793806670';
+  window.__PH_BUILD__ = 'ph-1793845290';
   (function(){
     var KEY='ph-build-seen';
     var reloading=false;
@@ -60,17 +60,23 @@
         ('serviceWorker' in navigator)? navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); }) : Promise.resolve()
       ]).then(function(){ location.reload(); }).catch(function(){ location.reload(); });
     }
-    // 启动时检查版本
-    fetch('./version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok? r.text():''; })
-      .then(function(txt){
-        if(!txt)return;
-        var v=(JSON.parse(txt)||{}).build||'';
-        var seen=localStorage.getItem(KEY)||'';
-        if(v && v!==seen){
-          localStorage.setItem(KEY,v);
-          if(seen) hardReload();     // 只在「之前来过且版本变了」时刷新，首次不影响
-        }
-      }).catch(function(){});
+    // 启动时检查版本：重试 3 次，降低国内网络偶发失败导致「永远不更新」的概率
+    (function check(tries){
+      fetch('./version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok? r.text():''; })
+        .then(function(txt){
+          if(!txt)return;
+          var v=(JSON.parse(txt)||{}).build||'';
+          var seen=localStorage.getItem(KEY)||'';
+          // 兜底：与本次打包注入的构建号比对（不依赖 localStorage）
+          var inline=(window.__PH_BUILD__||'').replace(/^ph-/,'');
+          var remote=v.replace(/^ph-/,'');
+          var stale = (seen && v!==seen) || (inline && remote && Math.abs(Number(remote)-Number(inline))>60);
+          if(v)localStorage.setItem(KEY,v);
+          if(stale && !sessionStorage.getItem('ph-reloading')) hardReload();
+        }).catch(function(){
+          if(tries>0) setTimeout(function(){ check(tries-1); }, 4000);
+        });
+    })(2);
     if('serviceWorker' in navigator && location.protocol==='https:'){
       navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).catch(function(){});
     }
