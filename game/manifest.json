@@ -1,0 +1,15 @@
+{
+  "name": "刀域突围 · SWORD BREAK",
+  "short_name": "刀域突围",
+  "description": "幸存者类 Roguelite 小游戏：怪物一波比一波强，看你能活多久。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#04080f",
+  "theme_color": "#04080f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
