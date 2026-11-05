@@ -1,0 +1,18 @@
+{
+  "name": "回声 ECHO 3D · 浮空回廊",
+  "short_name": "回声3D",
+  "description": "真 3D 生存解谜动作游戏：地面石板成片塌陷 · 残响沿你旧足迹追来 · 50 层记忆碎片与剧情 · 6 共鸣流派 · 5 名层主 · 装备养成",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0b1420",
+  "theme_color": "#0b1420",
+  "lang": "zh-CN",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
