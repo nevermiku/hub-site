@@ -1,0 +1,170 @@
+{
+ "classes": {
+  "swordsman": {
+   "f": "assets/img/class_swordsman.webp",
+   "w": 446,
+   "h": 720
+  },
+  "dual": {
+   "f": "assets/img/class_dual.webp",
+   "w": 497,
+   "h": 720
+  },
+  "lancer": {
+   "f": "assets/img/class_lancer.webp",
+   "w": 456,
+   "h": 720
+  },
+  "mage": {
+   "f": "assets/img/class_mage.webp",
+   "w": 444,
+   "h": 720
+  },
+  "archer": {
+   "f": "assets/img/class_archer.webp",
+   "w": 441,
+   "h": 720
+  },
+  "cleric": {
+   "f": "assets/img/class_cleric.webp",
+   "w": 481,
+   "h": 720
+  },
+  "rogue": {
+   "f": "assets/img/class_rogue.webp",
+   "w": 497,
+   "h": 720
+  },
+  "knight": {
+   "f": "assets/img/class_knight.webp",
+   "w": 479,
+   "h": 720
+  }
+ },
+ "mobs": {
+  "boar": {
+   "f": "assets/img/mob_boar.webp",
+   "w": 375,
+   "h": 360
+  },
+  "goblin": {
+   "f": "assets/img/mob_goblin.webp",
+   "w": 324,
+   "h": 360
+  },
+  "fungi": {
+   "f": "assets/img/mob_fungi.webp",
+   "w": 327,
+   "h": 360
+  },
+  "bat": {
+   "f": "assets/img/mob_bat.webp",
+   "w": 362,
+   "h": 360
+  },
+  "skel": {
+   "f": "assets/img/mob_skel.webp",
+   "w": 361,
+   "h": 360
+  },
+  "plant": {
+   "f": "assets/img/mob_plant.webp",
+   "w": 385,
+   "h": 360
+  },
+  "wolf": {
+   "f": "assets/img/mob_wolf.webp",
+   "w": 380,
+   "h": 360
+  },
+  "golem": {
+   "f": "assets/img/mob_golem.webp",
+   "w": 355,
+   "h": 360
+  }
+ },
+ "bosses": {
+  "warlord": {
+   "f": "assets/img/boss_warlord.webp",
+   "w": 514,
+   "h": 760
+  },
+  "queen": {
+   "f": "assets/img/boss_queen.webp",
+   "w": 480,
+   "h": 760
+  },
+  "frost": {
+   "f": "assets/img/boss_frost.webp",
+   "w": 504,
+   "h": 760
+  },
+  "reaper": {
+   "f": "assets/img/boss_reaper.webp",
+   "w": 499,
+   "h": 760
+  },
+  "titan": {
+   "f": "assets/img/boss_titan.webp",
+   "w": 517,
+   "h": 760
+  },
+  "final": {
+   "f": "assets/img/boss_final.webp",
+   "w": 527,
+   "h": 760
+  }
+ },
+ "scenes": {
+  "plain": {
+   "f": "assets/img/bg_plain.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "forest": {
+   "f": "assets/img/bg_forest.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "cave": {
+   "f": "assets/img/bg_cave.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "snow": {
+   "f": "assets/img/bg_snow.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "desert": {
+   "f": "assets/img/bg_desert.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "lava": {
+   "f": "assets/img/bg_lava.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "sea": {
+   "f": "assets/img/bg_sea.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "garden": {
+   "f": "assets/img/bg_garden.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "grave": {
+   "f": "assets/img/bg_grave.webp",
+   "w": 1280,
+   "h": 812
+  },
+  "final": {
+   "f": "assets/img/bg_final.webp",
+   "w": 1280,
+   "h": 812
+  }
+ }
+}
