@@ -108,6 +108,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 
 /* ---------- Boss 血条 / 演出 ---------- */
 #bossBar{position:absolute;left:50%;top:62px;transform:translateX(-50%);width:min(520px,72vw);text-align:center}
+#bossBar.dim,#toasts.dim{opacity:0;pointer-events:none;transition:opacity .25s}
+#bossBar,#toasts{transition:opacity .3s}
 #bossBar .bn{font-size:15px;font-weight:800;letter-spacing:2px;text-shadow:0 2px 8px #000}
 #bossBar .bt{font-size:10px;color:#ffd0a0;margin-bottom:5px}
 #bossBar .bar{height:12px;border-color:rgba(255,150,120,.5)}
