@@ -78,6 +78,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 .panelHead{font-size:22px;font-weight:800;letter-spacing:4px;margin-bottom:6px}
 .panelSub{font-size:11px;color:var(--sub);margin-bottom:18px;letter-spacing:1px}
 .lvGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:9px;max-height:58vh;overflow:auto;padding:4px}
+#levelGrid.endlessGrid{max-width:520px;margin:0 auto;grid-template-columns:repeat(2,minmax(0,1fr));max-height:none}
 .lvCard{border:1px solid var(--line);border-radius:12px;padding:11px 6px;background:rgba(255,255,255,.035);
  font-size:12px;position:relative;min-height:64px;display:flex;flex-direction:column;
  align-items:center;justify-content:center;gap:4px}
@@ -105,6 +106,8 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
  background:linear-gradient(135deg,rgba(120,190,255,.10),rgba(190,150,255,.07));
  border:1px solid rgba(150,200,255,.20);animation:lyricGlow 3.2s ease-in-out infinite}
 .lyricTag{font-size:11px;color:#8fb6d8;letter-spacing:2px;margin-bottom:10px}
+.songInfo{font-size:10px;color:#9fb8d4;line-height:1.8;margin:-4px 0 10px;letter-spacing:.5px}
+.songInfo b{color:#ffd070}
 .lyricLines{font-size:15px;line-height:2.05;color:#8fa6bd;letter-spacing:1px;min-height:62px}
 .lyricLines .ln{margin:1px 0;transition:.2s}
 .lyricLines .ln.on{color:#fff;text-shadow:0 0 18px rgba(160,220,255,.75)}
@@ -113,8 +116,34 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 .lyricBar{height:3px;border-radius:3px;background:rgba(255,255,255,.09);margin-top:12px;overflow:hidden}
 .lyricBar i{display:block;height:100%;width:0;border-radius:3px;
  background:linear-gradient(90deg,#7fe3ff,#c79cff,#ffd98a);transition:width .12s linear}
+/* ---------- 唱片架 ---------- */
+.lvSong{font-size:10px;color:var(--gold);margin-top:4px;letter-spacing:.5px;opacity:.92;text-shadow:0 2px 8px #000}
+#juke{align-items:flex-start}
+#juke .box{margin:auto}
+.jukeGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;
+ max-height:46vh;overflow:auto;padding:4px;margin:0 auto 16px;max-width:780px;text-align:left;
+ scrollbar-width:thin;scrollbar-color:rgba(140,216,255,.35) transparent}
+.jukeGrid::-webkit-scrollbar{width:6px}
+.jukeGrid::-webkit-scrollbar-thumb{background:rgba(140,216,255,.32);border-radius:3px}
+.jukeCard{border:1px solid var(--line);border-radius:12px;padding:8px;background:rgba(255,255,255,.035);
+ display:flex;flex-direction:column;gap:2px;transition:.15s;cursor:pointer;min-height:76px}
+.jcMeta,.jcMood{line-height:1.35}
+.jukeCard:hover{border-color:var(--accent);background:rgba(140,216,255,.10)}
+.jukeCard.sel{border-color:var(--gold);background:rgba(255,208,112,.10)}
+.jukeCard.lock{opacity:.42;cursor:default}
+.jukeCard.lock:hover{border-color:var(--line);background:rgba(255,255,255,.035)}
+.jcTier{font-size:9px;color:var(--gold);letter-spacing:1px}
+.jcName{font-size:14px;font-weight:800;color:#eaf2fb;margin:2px 0}
+.jcMeta{font-size:10px;color:#9fb8d4}
+.jcMood{font-size:9px;color:#7f95ad;margin-top:2px}
+.jukeNow{max-width:660px;margin:2px auto 0;padding:12px 18px 14px;border-radius:14px;
+ background:linear-gradient(135deg,rgba(120,190,255,.10),rgba(190,150,255,.07));
+ border:1px solid rgba(150,200,255,.20);min-height:108px}
+.jnTag{font-size:11px;color:#8fb6d8;letter-spacing:2px;margin-bottom:6px}
+.jnInfo{font-size:10px;color:#9fb8d4;line-height:1.8;margin-bottom:8px}
+.jnInfo b{color:#ffd070}
 @media (orientation:portrait){#tools{gap:4px;padding:7px 6px}.tb{min-width:48px;padding:8px 8px;font-size:10px}
- .hudTL .lvName{max-width:190px}.floorNum{font-size:19px}}
+ .hudTL .lvName{max-width:190px}.hudTL .lvSong{max-width:190px}.floorNum{font-size:19px}}
 </style>
 </head>
 <body>
@@ -124,10 +153,12 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
   <div class="hudTL">
     <div class="floorTag"><span class="floorNum" id="lvNum">第 1 关</span><span class="chapName" id="chapName">第一章 · 初响</span></div>
     <div class="lvName" id="lvName">—</div>
+    <div class="lvSong" id="lvSong"></div>
     <div class="nodeRow" id="nodeRow"></div>
   </div>
   <div class="hudTR">
     <span class="chip">步数 <b id="moves">0</b></span>
+    <button class="chip" id="btnJuke">♪ 唱片</button>
     <button class="chip" id="btnLevels">☰ 关卡</button>
     <button class="chip" id="btnHelp2">? 玩法</button>
   </div>
@@ -158,17 +189,35 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
     <div><button class="bigBtn" id="btnStart">开 始 聆 听</button></div>
     <div><button class="secBtn" id="btnContinue">继续（第 <span id="contLv">1</span> 关）</button>
       <button class="secBtn" id="btnLevelSel">选择关卡</button>
+      <button class="secBtn" id="btnJuke2">♪ 唱片架</button>
+      <button class="secBtn" id="btnEndless">∞ 无尽回廊</button>
       <button class="secBtn" id="btnHelp">玩法说明</button></div>
-    <div style="font-size:10px;color:#6f839c;margin-top:16px">纯 2D 链式解谜 · 30 关全部经过可解性验证 · 进度自动保存</div>
+    <div style="font-size:10px;color:#6f839c;margin-top:16px">纯 2D 链式解谜 · 30 关全部经过可解性验证 · 15 首原创曲目随章节递进 · 无尽回廊 · 进度自动保存</div>
   </div>
 </div>
 
 <div id="levels" class="screen hidden">
   <div class="box">
-    <div class="panelHead">余 响 回 廊</div>
-    <div class="panelSub">共 30 关 · 5 章 · 每章引入新的连锁机关</div>
+    <div class="panelHead" id="levelsHead">余 响 回 廊</div>
+    <div class="panelSub" id="levelsSub">共 30 关 · 5 章 · 每章引入新的连锁机关</div>
     <div class="lvGrid" id="levelGrid"></div>
     <div style="margin-top:16px"><button class="secBtn" id="levelsClose">返回</button></div>
+  </div>
+</div>
+
+<div id="juke" class="screen hidden">
+  <div class="box">
+    <div class="panelHead">唱 片 架</div>
+    <div class="panelSub" id="jukeSub">15 首原创曲目 · 通关解锁 · 点选即可试听整首与歌词</div>
+    <div class="jukeGrid" id="jukeGrid"></div>
+    <div class="jukeNow">
+      <div class="jnTag" id="jnTag">♪ 点选一张唱片开始试听</div>
+      <div class="jnInfo" id="jnInfo">曲目按章节解锁：每通关一章（6 关），解锁下一档的 3 首曲目。</div>
+      <div class="lyricLines" id="jukeLyrics"></div>
+      <div class="lyricBar"><i id="jukeBarIn"></i></div>
+    </div>
+    <div style="margin-top:14px"><button class="secBtn" id="jukeClose">返回</button>
+      <button class="secBtn" id="jukeStop">■ 停止试听</button></div>
   </div>
 </div>
 
@@ -183,8 +232,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
       · 点击 <span class="k">调频器 ◆</span> 切换青 / 橙 / 紫三种频率，节点只接受对应颜色<br>
       · 点击 <span class="k">▶ 播放回声</span> 看它走到哪一步断开，再调整<br><br>
       <b>操作</b>：撤销 / 重置 / 提示（指出第一个需要改的机关，每关仅 3 次）/ 倍速播放。<br><br>
-      <b>通关成歌</b>：每点亮一枚记忆就是一个音。通关后，这些音会连成一整段旋律重新播放，
-      并逐字点亮几句歌词——可以「重听旋律」，也能让浏览器把歌词念出来。<br><br>
+      <b>通关成歌</b>：每点亮一枚记忆就是一个音。通关后，这些音会按本关曲目的调式、和弦进行与声部数
+      编成一整段完整旋律重新播放，并逐字点亮几句原创歌词——可以「重听旋律」，也能让浏览器把歌词念出来。<br><br>
+      <b>曲库递进</b>：共 15 首原创曲目，分 5 档难度，每 6 关升一档、每档 3 首轮换。越往后的章节，
+      调式越丰富（五声 → 大小调 → 和声小调 / 多利亚 → 利底亚 / 蓝调）、声部更多、节奏更密、装饰音更多，
+      末句还会升八度形成副歌高潮。旋律、和声与歌词均为程序化原创，致敬华语流行抒情曲风。<br><br>
+      <b>唱片架</b>：点 <span class="k">♪ 唱片</span> 打开 15 首曲目的收藏册。已解锁的曲目可以随时点选试听整首编曲，
+      歌词同样逐字点亮；每通关一章（6 关）解锁下一档的 3 首。试听不影响关卡进度。<br><br>
+      <b>无尽回廊</b>：点 <span class="k">∞ 无尽回廊</span> 进入挑战模式。层数没有上限，每往下一层，
+      记忆节点与调频器更多、连锁更长；每层仍由生成器<b>逐层验证可解</b>，通关后同样会把本层记忆连成一首歌。
+      单独记录历史最远层、累计通关层数与每层最佳步数，随时可以回到最远层继续或从头重开。<br><br>
       步数越接近理论最优，星级越高；已通关关卡会记录最佳步数。
     </div>
     <button class="secBtn" id="helpClose">明白了</button>
@@ -197,6 +254,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
     <div class="winText" id="winText"></div>
     <div class="lyricBox" id="lyricBox">
       <div class="lyricTag" id="lyricTag">♪ 本关回声，连成了一句歌</div>
+      <div class="songInfo" id="songInfo"></div>
       <div class="lyricLines" id="lyricLines"></div>
       <div class="lyricBar"><i id="lyricBarIn"></i></div>
     </div>
