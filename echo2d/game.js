@@ -65,6 +65,22 @@
   const TOTAL = 30;
   const SAVE_KEY = 'echo2d_save_v1';
 
+  /* 通关歌词：按章节分组，每关取其中 2~3 句，逐字随旋律点亮 */
+  const LYRICS = [
+    ['听见了吗，那声迟到的回答', '绕过镜子，又落回脚下', '把没说完的话，轻轻放下'],
+    ['第一折光，替我回头看', '橙色回声停在半路', '等一扇门，慢慢打开'],
+    ['三个音阶，拼成旧日的调', '调律不是改变声音', '是终于肯听的人'],
+    ['一环断，环环皆静', '把余响接回掌心', '长廊尽头，有人在等'],
+    ['所有延迟都收回自己', '白色空间第一次有了回声', '这一次，声音属于你']
+  ];
+  const SCALE = [392, 440, 494, 587, 659, 784, 880, 988];  // 用于把节点音连成连贯旋律
+  function lyricsFor(lv) {
+    const ch = Math.min(4, Math.floor((lv - 1) / 6));
+    const pool = LYRICS[ch], n = 2 + (lv % 2);
+    const start = (lv - 1) % pool.length;
+    return Array.from({ length: n }, (_, i) => pool[(start + i) % pool.length]);
+  }
+
   function mulberry32(a) {
     return function () {
       a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -144,13 +160,13 @@
   /* ---------------- 关卡生成：先造可解路径，再打乱机关 ---------------- */
   function tryBuild(idx, n, nodeCount, tunerCount, chapter, salt) {
     const rng = mulberry32(idx * 7919 + salt * 104729 + 17);
-    const segCount = 4 + Math.floor(rng() * 4) + Math.min(2, chapter);
+    const segCount = 5 + Math.floor(rng() * 4) + Math.min(2, chapter);   // 路径更长、转折更多
     const path = [], used = new Set(), mirrorAt = new Map();
     let x = 0, y = 1 + Math.floor(rng() * (n - 2)), dir = 1;
     const startY = y;
     for (let s = 0; s < segCount; s++) {
       // 后期章节路径更长，保证节点与门有足够落点
-      const len = 1 + Math.floor(rng() * 3) + (chapter >= 3 ? 1 : 0);
+      const len = 1 + Math.floor(rng() * 3) + (chapter >= 2 ? 1 : 0);
       for (let k = 0; k < len; k++) {
         x += DIRS[dir][0]; y += DIRS[dir][1];
         if (x < 0 || y < 0 || x >= n || y >= n || used.has(keyOf(x, y, n))) return null;
@@ -205,7 +221,7 @@
     const init = { mirrors: {}, tuners: {} };
     for (const [k, st] of mirrorAt) {
       sol.mirrors[k] = st;
-      init.mirrors[k] = rng() < .5 ? st : 1 - st;
+      init.mirrors[k] = 1 - st;      // 每面镜子初始都拨反，必须逐面调回
     }
     let anyDiff = Object.keys(sol.mirrors).some(k => init.mirrors[k] !== sol.mirrors[k]);
     for (const i of tunerIdx) {
@@ -240,7 +256,7 @@
     cells.push({ type: 'exit', x: path[L - 1].x, y: path[L - 1].y });
 
     // 装饰墙：不放在路径上，只增加视觉层次与迷惑性
-    const wallCount = 5 + chapter * 3;
+    const wallCount = 7 + chapter * 4;
     for (let k = 0; k < wallCount; k++) {
       const wx = Math.floor(rng() * n), wy = Math.floor(rng() * n);
       if (used.has(keyOf(wx, wy, n)) || wx === 0) continue;
@@ -259,9 +275,9 @@
 
   function genLevel(idx) {
     const chapter = Math.min(4, Math.floor((idx - 1) / 6));
-    const n = chapter <= 1 ? 7 : chapter === 2 ? 8 : 9;
-    const nodeCount = 2 + chapter;
-    const tunerCount = chapter === 0 ? 0 : Math.min(3, chapter);
+    const n = chapter <= 1 ? 8 : chapter === 2 ? 9 : 10;
+    const nodeCount = 3 + chapter;                 // 3~7 段记忆（原 2~6）
+    const tunerCount = Math.min(4, 1 + chapter);   // 1~4 个调频器，第一章即引入颜色
     for (let salt = 0; salt < 2000; salt++) {
       const lv = tryBuild(idx, n, nodeCount, tunerCount, chapter, salt);
       if (lv) return lv;
@@ -281,6 +297,7 @@
     lv: 1, level: null, cfg: null, history: [], moves: 0,
     playing: false, trace: null, tick: 0, lastAdvance: 0, speed: 1,
     activated: [], won: false, hintKey: -1, hintUntil: 0, fx: [], parts: [], beat: 0,
+    melody: [], song: null, songPlaying: false, hintsLeft: 3,
     save: loadSave()
   };
   function loadSave() {
@@ -357,6 +374,17 @@
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .34, W / 2, H / 2, Math.max(W, H) * .74);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    // 通关旋律回放：随节拍从中心扩散的声波环，让「连起来的歌」看得见
+    if (S.songPlaying && S.song) {
+      const period = S.song.beat * 1000, phase = (now % period) / period;
+      for (let k = 0; k < 3; k++) {
+        const t = (phase + k / 3) % 1;
+        const r = Math.min(W, H) * (.16 + t * .46);
+        ctx.strokeStyle = hexA(pal.accent, (1 - t) * .16);
+        ctx.lineWidth = 2 + (1 - t) * 2;
+        ctx.beginPath(); ctx.arc(W / 2, H * .48, r, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
     if (!S.level) { requestAnimationFrame(draw); return; }
     const n = S.level.n, L = S.level;
 
@@ -603,6 +631,43 @@
       [523, 659, 784, 1047].forEach((f, i) => this.tone(f, i * .13, .5, 'sine', .13));
       this.tone(1319, .55, .8, 'sine', .08);
     },
+    /* 通关：把本关所有节点音连成一段完整旋律（主音 + 低八度衬底 + 泛音） */
+    song(notes, beat) {
+      if (!this.on || !this.ready()) return 0;
+      this.tone(196, 0, .45, 'sine', .07);                  // 前奏铺底
+      let i = 0;
+      for (const n of notes) {
+        const at = .18 + i * beat;
+        if (n.f > 0) {
+          this.tone(n.f, at, beat * 1.65, 'sine', .13);
+          this.tone(n.f * .5, at, beat * 2.1, 'triangle', .04);
+          this.tone(n.f * 2, at + .05, beat * .85, 'sine', .03);
+        }
+        i++;
+      }
+      const end = .18 + notes.length * beat;
+      this.tone(392, end, .9, 'sine', .09);                // 尾音收束
+      this.tone(587, end + .06, .9, 'sine', .06);
+      return end + 1;
+    },
+    /* 未通关：把已点亮的音倒着渐弱放一遍，像散掉的回声 */
+    fragments(melody) {
+      if (!this.on || !this.ready() || !melody.length) return;
+      melody.slice().reverse().forEach((m, i) => {
+        this.tone([392, 494, 587][m.freq || 0] * Math.max(.6, 1 - i * .06), i * .12, .22, 'sine', .07);
+      });
+    },
+    speak(lines) {
+      try {
+        if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+        window.speechSynthesis.cancel();
+        for (const l of lines) {
+          const u = new SpeechSynthesisUtterance(l);
+          u.lang = 'zh-CN'; u.rate = .9; u.pitch = 1.04; u.volume = .6;
+          window.speechSynthesis.speak(u);
+        }
+      } catch (e) {}
+    },
     step() { this.tone(340, 0, .045, 'sine', .035); }
   };
   window.addEventListener('pointerdown', () => AU.ready(), { once: true });
@@ -611,7 +676,7 @@
   function handleEvents(events) {
     for (const e of events) {
       if (e.t === 'node') {
-        if (!S.activated.includes(e.id)) S.activated.push(e.id);
+        if (!S.activated.includes(e.id)) { S.activated.push(e.id); S.melody.push({ freq: e.freq, id: e.id }); }
         addFx(e.x, e.y, FREQ[e.freq].dim + 'ALPHA)');
         addParts(e.x, e.y, FREQ[e.freq].c, 16);
         S.beat = performance.now();
@@ -650,6 +715,8 @@
     S.cfg = { mirrors: { ...S.level.init.mirrors }, tuners: { ...S.level.init.tuners } };
     S.history = []; S.moves = 0; S.playing = false; S.trace = null; S.tick = 0;
     S.activated = []; S.won = false; S.fx = []; S.parts = []; S.beat = 0; S.hintKey = -1;
+    S.melody = []; S.song = null; S.songPlaying = false; S.hintsLeft = 3;
+    stopSong();
     layout();
     $('lvNum').textContent = '第 ' + S.lv + ' 关';
     $('chapName').textContent = CHAP[S.level.chapter] + ' · ' + CHAP_DESC[S.level.chapter];
@@ -692,30 +759,92 @@
     if (S.won) { toast('这一段已经归位了，去下一段吧'); return; }
     const r = simulate(S.level, S.cfg);
     S.trace = r.trace; S.tick = 0; S.playing = true;
-    S.activated = []; S.fx = []; S.lastAdvance = performance.now();
+    S.activated = []; S.fx = []; S.melody = []; S.lastAdvance = performance.now();
     S.result = r;
     buildNodeRow();
     $('btnPlay').disabled = true;
   }
+  /* ---------------- 通关旋律 + 逐字歌词 ----------------
+     每个点亮过的记忆节点是一个音；通关后按歌词逐字连成一整段旋律播放，
+     字随音亮起，于是「散落的回声」真的连成了一句歌。 */
+  let songTimers = [];
+  function stopSong() {
+    for (const t of songTimers) clearTimeout(t);
+    songTimers = []; S.songPlaying = false;
+  }
+  function optimalMoves(lv) {
+    let n = 0;
+    for (const k in lv.solution.mirrors) if ((lv.init.mirrors[k] ?? 0) !== lv.solution.mirrors[k]) n++;
+    for (const k in lv.solution.tuners) if ((lv.init.tuners[k] ?? 0) !== lv.solution.tuners[k]) n++;
+    return Math.max(1, n);
+  }
+  function buildSong(melody, lv) {
+    const lines = lyricsFor(lv), beat = .30, notes = [];
+    let mi = 0;
+    for (let li = 0; li < lines.length; li++) {
+      const chars = lines[li].split('');
+      for (let ci = 0; ci < chars.length; ci++) {
+        const ch = chars[ci];
+        if (/[，。、！？\s]/.test(ch)) { notes.push({ f: 0, li, ci }); continue; }
+        const m = melody.length ? melody[mi % melody.length] : { freq: li % 3 };
+        mi++;
+        notes.push({ f: SCALE[(m.freq * 2 + (ci % 4) + li) % SCALE.length], li, ci, freq: m.freq });
+      }
+      notes.push({ f: 0, li, ci: -1 });   // 句间呼吸
+    }
+    return { lines, notes, beat, melodyCount: melody.length, dur: .18 + notes.length * beat + 1 };
+  }
+  function renderLyrics(song, activeIdx) {
+    const box = $('lyricLines'); if (!box) return;
+    const cur = activeIdx >= 0 ? song.notes[activeIdx] : null;
+    box.innerHTML = song.lines.map((l, li) =>
+      `<div class="ln${cur && cur.li === li ? ' on' : ''}">` +
+      l.split('').map((ch, ci) =>
+        `<span class="ch${cur && cur.li === li && cur.ci === ci ? ' on' : ''}">${ch}</span>`).join('') +
+      '</div>').join('');
+  }
+  function playSong(song) {
+    stopSong();
+    if (!song || !song.notes.length) return;
+    S.songPlaying = true;
+    const tag = $('lyricTag');
+    if (tag) tag.textContent = '♪ ' + song.melodyCount + ' 枚记忆 · 连成 ' + song.lines.length + ' 句歌';
+    renderLyrics(song, -1);
+    const bar = $('lyricBarIn'); if (bar) bar.style.width = '0%';
+    AU.song(song.notes, song.beat);
+    song.notes.forEach((n, i) => {
+      songTimers.push(setTimeout(() => {
+        renderLyrics(song, i);
+        if (bar) bar.style.width = Math.round((i + 1) / song.notes.length * 100) + '%';
+      }, (i * song.beat + .18) * 1000));
+    });
+    songTimers.push(setTimeout(() => { S.songPlaying = false; }, song.dur * 1000));
+  }
+
   function finishPlay() {
     S.playing = false; $('btnPlay').disabled = false;
     const r = S.result;
     if (r.win) {
       S.won = true;
-      AU.win();
       const prev = S.save.best[S.lv];
       const isBest = prev === undefined || S.moves < prev;
       if (isBest) S.save.best[S.lv] = S.moves;
       S.save.cleared[S.lv] = 1;
       S.save.cur = Math.min(TOTAL, S.lv + 1);
       persist();
+      const opt = optimalMoves(S.level);
+      const stars = S.moves <= opt ? 3 : S.moves <= Math.ceil(opt * 1.8) ? 2 : 1;
+      const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
       $('winText').innerHTML = '第 ' + S.lv + ' 关 · ' + S.level.name + '<br>' +
-        S.level.story + '<br><br><span style="color:#ffd070">用了 ' + S.moves + ' 步' +
-        (isBest ? ' · 新纪录！' : ' · 最佳 ' + S.save.best[S.lv] + ' 步') + '</span>';
+        S.level.story + '<br><br><span style="color:#ffd070">' + starStr + ' · 用了 ' + S.moves + ' 步' +
+        (isBest ? ' · 新纪录！' : ' · 最佳 ' + S.save.best[S.lv] + ' 步') + '（最优 ' + opt + ' 步）</span>';
       $('btnNext').textContent = S.lv >= TOTAL ? '回 到 回 廊' : '下 一 段';
-      setTimeout(() => $('win').classList.remove('hidden'), 420);
+      // 本关点亮的节点音连成整段旋律，通关后播放并逐字点亮歌词
+      S.song = buildSong(S.melody, S.lv);
+      setTimeout(() => { $('win').classList.remove('hidden'); playSong(S.song); }, 420);
     } else {
       const last = r.activated.length;
+      AU.fragments(S.melody);   // 失败也把已点亮的音倒着放一遍，像散掉的回声
       toast(last ? '回声在第 ' + (last + 1) + ' 枚记忆前散了，再调一调' : '回声还没走到第一枚记忆，检查镜面', 3000);
     }
   }
@@ -735,14 +864,15 @@
   }
   function hint() {
     if (S.playing || S.won) return;
+    if (S.hintsLeft <= 0) { toast('本关提示已用完，试着自己听出顺序', 2400); return; }
     const sol = S.level.solution;
     for (const k in sol.mirrors) if ((S.cfg.mirrors[k] ?? 0) !== sol.mirrors[k]) {
-      S.hintKey = +k; S.hintUntil = performance.now() + 2600;
-      toast('提示：高亮的那面镜子，方向不对', 2600); return;
+      S.hintKey = +k; S.hintUntil = performance.now() + 2600; S.hintsLeft--;
+      toast('提示：高亮的那面镜子，方向不对（剩余 ' + S.hintsLeft + ' 次）', 2600); return;
     }
     for (const k in sol.tuners) if ((S.cfg.tuners[k] ?? 0) !== sol.tuners[k]) {
-      S.hintKey = +k; S.hintUntil = performance.now() + 2600;
-      toast('提示：高亮的调频器，频率不对', 2600); return;
+      S.hintKey = +k; S.hintUntil = performance.now() + 2600; S.hintsLeft--;
+      toast('提示：高亮的调频器，频率不对（剩余 ' + S.hintsLeft + ' 次）', 2600); return;
     }
     toast('机关都对了，点「播放回声」试试');
   }
@@ -784,9 +914,11 @@
   $('btnHelp').onclick = () => $('help').classList.remove('hidden');
   $('btnHelp2').onclick = () => $('help').classList.remove('hidden');
   $('helpClose').onclick = () => $('help').classList.add('hidden');
-  $('btnNext').onclick = () => S.lv >= TOTAL ? openLevels() : loadLevel(S.lv + 1);
-  $('btnWinLevels').onclick = openLevels;
-  $('btnReplay').onclick = () => { $('win').classList.add('hidden'); S.won = false; S.activated = []; buildNodeRow(); };
+  $('btnNext').onclick = () => { stopSong(); S.lv >= TOTAL ? openLevels() : loadLevel(S.lv + 1); };
+  $('btnWinLevels').onclick = () => { stopSong(); openLevels(); };
+  $('btnReplay').onclick = () => { stopSong(); $('win').classList.add('hidden'); S.won = false; S.activated = []; S.melody = []; buildNodeRow(); };
+  $('btnReplaySong').onclick = () => { if (S.song) playSong(S.song); };
+  $('btnSpeak').onclick = () => { if (S.song) AU.speak(S.song.lines); };
   window.addEventListener('keydown', e => {
     if (e.code === 'Space') { e.preventDefault(); play(); }
     else if (e.code === 'KeyR') reset();
@@ -803,5 +935,7 @@
     });
   }
   // 供自动化验收
-  window.__ECHO2D__ = { S, genLevel, simulate, loadLevel, play, AU, get total() { return TOTAL; } };
+  window.__ECHO2D__ = { S, genLevel, simulate, loadLevel, play, AU, finishPlay,
+    buildSong, playSong, stopSong, lyricsFor, optimalMoves, LYRICS, SCALE,
+    get total() { return TOTAL; } };
 })();

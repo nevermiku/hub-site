@@ -98,7 +98,21 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 #win .box{max-width:520px}
 .winTitle{font-size:38px;font-weight:900;letter-spacing:8px;color:#cfe8ff;
  text-shadow:0 0 30px rgba(140,200,255,.5)}
-.winText{font-size:13px;color:#b8c8da;line-height:2.1;margin:16px 0 22px}
+.winText{font-size:13px;color:#b8c8da;line-height:2.1;margin:16px 0 14px}
+/* 通关旋律 + 逐字歌词 */
+@keyframes lyricGlow{0%,100%{box-shadow:0 0 24px rgba(90,160,255,.08) inset}50%{box-shadow:0 0 48px rgba(150,190,255,.22) inset}}
+.lyricBox{margin:0 auto 18px;padding:14px 20px 16px;max-width:660px;border-radius:16px;
+ background:linear-gradient(135deg,rgba(120,190,255,.10),rgba(190,150,255,.07));
+ border:1px solid rgba(150,200,255,.20);animation:lyricGlow 3.2s ease-in-out infinite}
+.lyricTag{font-size:11px;color:#8fb6d8;letter-spacing:2px;margin-bottom:10px}
+.lyricLines{font-size:15px;line-height:2.05;color:#8fa6bd;letter-spacing:1px;min-height:62px}
+.lyricLines .ln{margin:1px 0;transition:.2s}
+.lyricLines .ln.on{color:#fff;text-shadow:0 0 18px rgba(160,220,255,.75)}
+.lyricLines .ch{opacity:.42;transition:opacity .12s,color .12s}
+.lyricLines .ch.on{opacity:1;color:#ffd98a;text-shadow:0 0 16px rgba(255,208,112,.9)}
+.lyricBar{height:3px;border-radius:3px;background:rgba(255,255,255,.09);margin-top:12px;overflow:hidden}
+.lyricBar i{display:block;height:100%;width:0;border-radius:3px;
+ background:linear-gradient(90deg,#7fe3ff,#c79cff,#ffd98a);transition:width .12s linear}
 @media (orientation:portrait){#tools{gap:4px;padding:7px 6px}.tb{min-width:48px;padding:8px 8px;font-size:10px}
  .hudTL .lvName{max-width:190px}.floorNum{font-size:19px}}
 </style>
@@ -137,7 +151,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 <div id="title" class="screen">
   <div class="box">
     <div class="logo">回 声 E C H O</div>
-    <div class="logoSub">2D · 余 响 回 廊 · 30 段连锁解谜</div>
+    <div class="logoSub">2D · 余 响 回 廊 · 30 段连锁解谜 · 通关成歌</div>
     <div class="tagline">一束回声在格间游走。<b>点亮第一枚记忆，门才会为第二枚打开</b>——<br>
       前一步的余响，是后一步唯一的钥匙。<br>
       转动镜面、调准频率，让声音一环扣一环地抵达出口。</div>
@@ -168,8 +182,10 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
       · 点击 <span class="k">镜面 ◩</span> 切换斜向，把回声折向另一个方向<br>
       · 点击 <span class="k">调频器 ◆</span> 切换青 / 橙 / 紫三种频率，节点只接受对应颜色<br>
       · 点击 <span class="k">▶ 播放回声</span> 看它走到哪一步断开，再调整<br><br>
-      <b>操作</b>：撤销 / 重置 / 提示（指出第一个需要改的机关）/ 倍速播放。<br>
-      步数越少评价越高，已通关关卡会记录最佳步数。
+      <b>操作</b>：撤销 / 重置 / 提示（指出第一个需要改的机关，每关仅 3 次）/ 倍速播放。<br><br>
+      <b>通关成歌</b>：每点亮一枚记忆就是一个音。通关后，这些音会连成一整段旋律重新播放，
+      并逐字点亮几句歌词——可以「重听旋律」，也能让浏览器把歌词念出来。<br><br>
+      步数越接近理论最优，星级越高；已通关关卡会记录最佳步数。
     </div>
     <button class="secBtn" id="helpClose">明白了</button>
   </div>
@@ -179,9 +195,16 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
   <div class="box">
     <div class="winTitle">回 声 归 位</div>
     <div class="winText" id="winText"></div>
+    <div class="lyricBox" id="lyricBox">
+      <div class="lyricTag" id="lyricTag">♪ 本关回声，连成了一句歌</div>
+      <div class="lyricLines" id="lyricLines"></div>
+      <div class="lyricBar"><i id="lyricBarIn"></i></div>
+    </div>
     <div><button class="bigBtn" id="btnNext">下 一 段</button></div>
-    <div><button class="secBtn" id="btnWinLevels">选择关卡</button>
-      <button class="secBtn" id="btnReplay">再听一次</button></div>
+    <div style="margin-top:12px"><button class="secBtn" id="btnWinLevels">选择关卡</button>
+      <button class="secBtn" id="btnReplaySong">♪ 重听旋律</button>
+      <button class="secBtn" id="btnSpeak">🔊 朗读歌词</button>
+      <button class="secBtn" id="btnReplay">重玩本段</button></div>
   </div>
 </div>
 
