@@ -15,6 +15,14 @@
   ];
   const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];   // 上 右 下 左
   const CHAP = ['第一章 · 初响', '第二章 · 折返', '第三章 · 调律', '第四章 · 连锁', '第五章 · 归寂'];
+  // 章节配色：每章一套天空/辉光/强调色，切换关卡时整体氛围随之变化
+  const CHAP_COL = [
+    { a: '#0a2236', b: '#0a1526', glow: '#3a9fd0', accent: '#7fe3ff' }, // 初响 · 青
+    { a: '#10222e', b: '#0a1622', glow: '#c87a3a', accent: '#ffb26b' }, // 折返 · 橙
+    { a: '#191333', b: '#0d1020', glow: '#7a5cc8', accent: '#c79cff' }, // 调律 · 紫
+    { a: '#08222a', b: '#08131c', glow: '#2fa080', accent: '#7fe0a0' }, // 连锁 · 绿
+    { a: '#0c0c1c', b: '#06060f', glow: '#8890d8', accent: '#aab8ff' }  // 归寂 · 蓝紫
+  ];
   const CHAP_DESC = ['转动镜面，让回声学会拐弯', '频率开始分化，颜色必须对上',
                      '更多记忆，更长的连锁', '一环断，则环环皆断', '把每一段延迟都收回自己身上'];
   const LV_NAME = ['无声回廊', '第一折', '两面之镜', '回身', '折光', '门后有声',
@@ -272,7 +280,7 @@
   const S = {
     lv: 1, level: null, cfg: null, history: [], moves: 0,
     playing: false, trace: null, tick: 0, lastAdvance: 0, speed: 1,
-    activated: [], won: false, hintKey: -1, hintUntil: 0, fx: [],
+    activated: [], won: false, hintKey: -1, hintUntil: 0, fx: [], parts: [], beat: 0,
     save: loadSave()
   };
   function loadSave() {
@@ -311,19 +319,44 @@
   }
   function glow(color, blur) { ctx.shadowColor = color; ctx.shadowBlur = blur; }
   function noGlow() { ctx.shadowBlur = 0; }
+  function hexA(hex, a) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+  // 激活时迸发的粒子（网格坐标 → 屏幕像素）
+  function addParts(gx, gy, color, n = 14) {
+    const x = ox + gx * cell + cell / 2, y = oy + gy * cell + cell / 2;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = .6 + Math.random() * 1.9;
+      S.parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - .5,
+        life: 460 + Math.random() * 160, max: 620, c: color, r: 1.3 + Math.random() * 2.2 });
+    }
+  }
 
   /* ---------------- 绘制 ---------------- */
   function draw(now) {
     ctx.clearRect(0, 0, W, H);
-    // 背景
-    const g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, '#0a1526'); g.addColorStop(.55, '#0b1220'); g.addColorStop(1, '#070d18');
+    const pal = CHAP_COL[S.level ? S.level.chapter : 0] || CHAP_COL[0];
+    // 背景：章节配色渐变 + 中央柔光
+    const g = ctx.createLinearGradient(0, 0, W * .45, H);
+    g.addColorStop(0, pal.a); g.addColorStop(.6, pal.b); g.addColorStop(1, '#05080f');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    for (let i = 0; i < 46; i++) {
-      const sx = (i * 137.5) % W, sy = (i * 71.3) % H;
-      ctx.fillStyle = 'rgba(160,210,255,' + (.05 + .05 * Math.sin(now / 900 + i)) + ')';
-      ctx.fillRect(sx, sy, 1.6, 1.6);
+    const rg = ctx.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, Math.max(W, H) * .62);
+    rg.addColorStop(0, hexA(pal.glow, .16)); rg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    // 漂移光尘
+    for (let i = 0; i < 60; i++) {
+      const bx = (i * 137.5) % W, by = (i * 71.3) % H;
+      const dx = Math.sin(now / 2600 + i * 1.7) * 22, dy = Math.cos(now / 3200 + i * 1.3) * 16;
+      ctx.fillStyle = hexA(pal.accent, .05 + .05 * Math.sin(now / 900 + i));
+      const sz = 1.2 + (i % 3) * .6;
+      ctx.fillRect(bx + dx, by + dy, sz, sz);
     }
+    // 暗角
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .34, W / 2, H / 2, Math.max(W, H) * .74);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     if (!S.level) { requestAnimationFrame(draw); return; }
     const n = S.level.n, L = S.level;
 
@@ -350,8 +383,9 @@
       if (!done && !active) continue;
       ctx.save();
       ctx.setLineDash([5, 6]);
-      ctx.lineWidth = 1.6;
-      ctx.strokeStyle = done ? FREQ[a.freq].dim + '.22)' : 'rgba(255,208,112,.22)';
+      ctx.lineDashOffset = -(now / 55) % 11;          // 虚线流动，暗示回声前进方向
+      ctx.lineWidth = active ? 2.2 : 1.6;
+      ctx.strokeStyle = done ? FREQ[a.freq].dim + '.28)' : 'rgba(255,208,112,.30)';
       ctx.beginPath();
       ctx.moveTo(ox + a.x * cell + cell / 2, oy + a.y * cell + cell / 2);
       ctx.lineTo(ox + b.x * cell + cell / 2, oy + b.y * cell + cell / 2);
@@ -429,6 +463,13 @@
         // 频率色点
         ctx.fillStyle = f.c; ctx.beginPath();
         ctx.arc(cx + cell * .27, cy - cell * .27, Math.max(2.5, cell * .055), 0, Math.PI * 2); ctx.fill();
+        // 呼吸光环（已点亮 / 下一目标）
+        if (on || isNext) {
+          const bp = (Math.sin(now / 280 + c.id * 1.7) + 1) / 2;
+          ctx.strokeStyle = on ? hexA(f.c, .45 * (1 - bp)) : 'rgba(255,208,112,' + (.4 * (1 - bp)) + ')';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(cx, cy, cell * (.30 + bp * .16), 0, Math.PI * 2); ctx.stroke();
+        }
         // 当前目标标记
         if (isNext) {
           ctx.fillStyle = 'rgba(255,208,112,.85)';
@@ -489,6 +530,26 @@
       ctx.arc(ox + e.x * cell + cell / 2, oy + e.y * cell + cell / 2,
               cell * (.18 + k * .65), 0, Math.PI * 2); ctx.stroke();
       if (e.life <= 0) S.fx.splice(i, 1);
+    }
+
+    // 激活粒子
+    for (let i = S.parts.length - 1; i >= 0; i--) {
+      const q = S.parts[i];
+      q.x += q.vx; q.y += q.vy; q.vy += .035; q.vx *= .985; q.life -= 16;
+      const k = q.life / q.max;
+      if (k <= 0) { S.parts.splice(i, 1); continue; }
+      ctx.globalAlpha = Math.max(0, k) * .9;
+      ctx.fillStyle = q.c;
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.r * k + .4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // 激活节拍脉冲
+    const bt = now - S.beat;
+    if (S.beat && bt >= 0 && bt < 620) {
+      const k = bt / 620;
+      ctx.strokeStyle = hexA(pal.accent, .38 * (1 - k));
+      ctx.lineWidth = 3 * (1 - k) + 1;
+      ctx.beginPath(); ctx.arc(W / 2, H * .45, Math.min(W, H) * (.14 + k * .55), 0, Math.PI * 2); ctx.stroke();
     }
 
     // 播放推进
@@ -552,6 +613,8 @@
       if (e.t === 'node') {
         if (!S.activated.includes(e.id)) S.activated.push(e.id);
         addFx(e.x, e.y, FREQ[e.freq].dim + 'ALPHA)');
+        addParts(e.x, e.y, FREQ[e.freq].c, 16);
+        S.beat = performance.now();
         AU.node(e.freq);
         buildNodeRow();
       } else if (e.t === 'bounce') { addFx(e.x, e.y, 'rgba(140,216,255,ALPHA)'); AU.bounce(); }
@@ -586,7 +649,7 @@
     S.level = genLevel(S.lv);
     S.cfg = { mirrors: { ...S.level.init.mirrors }, tuners: { ...S.level.init.tuners } };
     S.history = []; S.moves = 0; S.playing = false; S.trace = null; S.tick = 0;
-    S.activated = []; S.won = false; S.fx = []; S.hintKey = -1;
+    S.activated = []; S.won = false; S.fx = []; S.parts = []; S.beat = 0; S.hintKey = -1;
     layout();
     $('lvNum').textContent = '第 ' + S.lv + ' 关';
     $('chapName').textContent = CHAP[S.level.chapter] + ' · ' + CHAP_DESC[S.level.chapter];

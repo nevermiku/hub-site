@@ -218,6 +218,24 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
 .resultBox .r1{font-size:20px;font-weight:900;color:var(--gold)}
 .resultBox .r2{font-size:11px;color:var(--sub);margin-top:5px;line-height:1.6}
 
+/* ---------- 技能自由搭配 ---------- */
+.skSlots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.skSlot{position:relative;width:60px;height:62px;border-radius:12px;border:1px dashed var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:rgba(255,255,255,.03);font-size:9px;color:var(--sub)}
+.skSlot.on{border-style:solid;border-color:var(--accent);background:rgba(155,227,107,.12);color:var(--txt);cursor:pointer}
+.skSlot.on:hover{border-color:var(--red);background:rgba(255,106,122,.14)}
+.skSlot .si{font-size:20px;line-height:1}
+.skSlot .sn{max-width:56px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skSlot .num2{position:absolute;top:2px;left:5px;font-size:8px;color:var(--sub)}
+.skGrp{font-size:11px;font-weight:800;color:var(--accent2);margin:10px 0 5px;letter-spacing:.5px}
+.skPool{display:flex;flex-wrap:wrap;gap:5px}
+.skChip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:5px 9px;border-radius:9px;
+  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt)}
+.skChip .cdv{font-size:8px;color:var(--sub);opacity:.8}
+.skChip.on{background:rgba(155,227,107,.16);border-color:var(--accent);color:#dff7c8}
+.skChip:disabled{opacity:.35}
+.skChip:not(:disabled):active{transform:scale(.95)}
+
 /* ---------- 竖屏适配 ---------- */
 @media (orientation:portrait){
   .hudTL{min-width:160px}.floorNum{font-size:20px}.floorStory{max-width:170px}
@@ -250,6 +268,7 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none
     <div class="hudTR">
       <span class="chip">💰 <b id="goldTxt">0</b></span>
       <button class="chip" id="btnMenu">☰ 菜单</button>
+      <button class="chip" id="btnSide">📺 横版</button>
       <button class="chip" id="btnBag2">🎒</button>
       <div id="minimap"><canvas id="mapCanvas" width="264" height="264"></canvas></div>
     </div>
