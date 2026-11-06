@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>回声 ECHO 2D · 余响回廊</title>
+<style>
+:root{--accent:#8cd8ff;--bg:#080f1c;--card:rgba(14,24,42,.94);--line:rgba(150,200,255,.16);
+ --txt:#eaf2fb;--sub:#93a8c2;--gold:#ffd070;--green:#7fe0a0;--red:#ff7a8a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+ user-select:none;-webkit-user-select:none;touch-action:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none}
+.hudTL{position:absolute;left:16px;top:14px;text-shadow:0 2px 10px #000}
+.floorTag{display:flex;align-items:baseline;gap:9px}
+.floorNum{font-size:23px;font-weight:800;letter-spacing:1px}
+.chapName{font-size:11px;color:var(--sub);letter-spacing:2px}
+.lvName{font-size:12px;color:#cfe0f2;margin-top:5px}
+.nodeRow{display:flex;gap:5px;margin-top:9px;align-items:center}
+.nodeDot{width:19px;height:19px;border-radius:50%;border:1.5px solid rgba(160,200,240,.45);
+ display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--sub);
+ transition:all .3s}
+.nodeDot.on{background:var(--accent);color:#0a1424;border-color:var(--accent);
+ box-shadow:0 0 14px rgba(140,216,255,.7);font-weight:800}
+.nodeRow .chain{font-size:10px;color:#5b7590;margin:0 1px}
+.hudTR{position:absolute;right:14px;top:14px;display:flex;gap:6px;pointer-events:auto}
+.chip{background:rgba(10,20,36,.82);border:1px solid var(--line);border-radius:14px;
+ padding:6px 12px;font-size:11px;backdrop-filter:blur(8px);white-space:nowrap}
+.chip b{color:var(--gold)}
+/* ---------- 工具条 ---------- */
+#tools{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:7px;
+ background:rgba(9,18,32,.88);border:1px solid var(--line);border-radius:18px;padding:8px 10px;
+ backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:5}
+.tb{min-width:56px;padding:9px 12px;border-radius:12px;border:1px solid var(--line);
+ background:rgba(255,255,255,.05);font-size:11px;font-weight:700;text-align:center;transition:.15s}
+.tb:active{transform:scale(.93)}
+.tb .i{display:block;font-size:16px;line-height:1.2;margin-bottom:2px}
+.tb.pri{background:linear-gradient(110deg,var(--accent),#a9b8ff);color:#0a1424;border-color:transparent}
+.tb:disabled{opacity:.4}
+/* ---------- 提示 / 剧情 ---------- */
+#toast{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:20;
+ background:rgba(10,20,36,.94);border:1px solid var(--accent);border-radius:12px;
+ padding:10px 18px;font-size:12px;max-width:84vw;text-align:center;
+ box-shadow:0 8px 30px rgba(0,0,0,.6);animation:tIn .3s ease-out}
+@keyframes tIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+#story{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);width:min(580px,90vw);z-index:12;
+ background:rgba(9,20,36,.96);border:1px solid var(--accent);border-radius:16px;padding:16px 20px;
+ box-shadow:0 12px 44px rgba(0,0,0,.7);animation:tIn2 .4s ease-out}
+@keyframes tIn2{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+#story .tag{font-size:10px;letter-spacing:3px;color:var(--accent);margin-bottom:8px}
+#story .txt{font-size:13px;line-height:2;color:#dfeaf7}
+#story .btn{margin-top:13px;display:inline-block;padding:8px 22px;border-radius:10px;font-size:12px;font-weight:800;
+ background:linear-gradient(110deg,var(--accent),#a9b8ff);color:#0a1424}
+/* ---------- 全屏面板 ---------- */
+.screen{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+ padding:18px;overflow:auto;background:radial-gradient(ellipse at 30% 15%,#16273f 0%,#0a1220 55%,#060b14 100%)}
+.box{width:min(880px,96vw);text-align:center}
+.logo{font-size:min(8vw,50px);font-weight:900;letter-spacing:12px;
+ background:linear-gradient(90deg,#8cd8ff,#b79cff,#ff9ac0);-webkit-background-clip:text;background-clip:text;
+ color:transparent;filter:drop-shadow(0 4px 20px rgba(140,200,255,.35))}
+.logoSub{font-size:11px;letter-spacing:6px;color:#a8bdd4;margin-top:8px}
+.tagline{font-size:12px;color:var(--sub);margin:18px auto 20px;max-width:640px;line-height:2.1}
+.bigBtn{display:inline-block;padding:13px 40px;border-radius:26px;font-size:15px;font-weight:800;letter-spacing:3px;
+ background:linear-gradient(100deg,#8cd8ff,#b79cff);color:#0a1424;box-shadow:0 6px 24px rgba(140,180,255,.35);margin:7px}
+.secBtn{display:inline-block;padding:10px 22px;border-radius:20px;font-size:12px;border:1px solid var(--line);
+ background:rgba(255,255,255,.06);margin:6px}
+.panelHead{font-size:22px;font-weight:800;letter-spacing:4px;margin-bottom:6px}
+.panelSub{font-size:11px;color:var(--sub);margin-bottom:18px;letter-spacing:1px}
+.lvGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:9px;max-height:58vh;overflow:auto;padding:4px}
+.lvCard{border:1px solid var(--line);border-radius:12px;padding:11px 6px;background:rgba(255,255,255,.035);
+ font-size:12px;position:relative;min-height:64px;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:4px}
+.lvCard .n{font-size:17px;font-weight:800}
+.lvCard .s{font-size:9px;color:var(--sub)}
+.lvCard.done{border-color:var(--green);background:rgba(127,224,160,.10)}
+.lvCard.done .s{color:var(--green)}
+.lvCard.lock{opacity:.38}
+.lvCard .ch{position:absolute;top:4px;left:6px;font-size:8px;color:#6f89a6}
+.chapTitle{grid-column:1/-1;text-align:left;font-size:11px;color:var(--accent);letter-spacing:3px;
+ margin:12px 0 2px;padding-left:3px}
+.helpBox{text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--line);
+ border-radius:14px;padding:18px 22px;font-size:12px;line-height:2.1;color:#cfdeed;max-width:660px;margin:0 auto 18px}
+.helpBox b{color:var(--accent)}
+.helpBox .k{display:inline-block;background:rgba(140,216,255,.16);border:1px solid var(--line);
+ border-radius:6px;padding:1px 7px;margin:0 2px;font-size:11px}
+/* 通关 */
+#win .box{max-width:520px}
+.winTitle{font-size:38px;font-weight:900;letter-spacing:8px;color:#cfe8ff;
+ text-shadow:0 0 30px rgba(140,200,255,.5)}
+.winText{font-size:13px;color:#b8c8da;line-height:2.1;margin:16px 0 22px}
+@media (orientation:portrait){#tools{gap:4px;padding:7px 6px}.tb{min-width:48px;padding:8px 8px;font-size:10px}
+ .hudTL .lvName{max-width:190px}.floorNum{font-size:19px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud">
+  <div class="hudTL">
+    <div class="floorTag"><span class="floorNum" id="lvNum">第 1 关</span><span class="chapName" id="chapName">第一章 · 初响</span></div>
+    <div class="lvName" id="lvName">—</div>
+    <div class="nodeRow" id="nodeRow"></div>
+  </div>
+  <div class="hudTR">
+    <span class="chip">步数 <b id="moves">0</b></span>
+    <button class="chip" id="btnLevels">☰ 关卡</button>
+    <button class="chip" id="btnHelp2">? 玩法</button>
+  </div>
+</div>
+
+<div id="tools">
+  <button class="tb pri" id="btnPlay"><span class="i">▶</span>播放回声</button>
+  <button class="tb" id="btnSpeed"><span class="i">⏩</span>速度 ×1</button>
+  <button class="tb" id="btnUndo"><span class="i">↶</span>撤销</button>
+  <button class="tb" id="btnReset"><span class="i">↺</span>重置</button>
+  <button class="tb" id="btnHint"><span class="i">✧</span>提示</button>
+</div>
+
+<div id="toast" class="hidden"></div>
+<div id="story" class="hidden">
+  <div class="tag" id="storyTag">记忆碎片</div>
+  <div class="txt" id="storyText"></div>
+  <button class="btn" id="storyOk">继续</button>
+</div>
+
+<div id="title" class="screen">
+  <div class="box">
+    <div class="logo">回 声 E C H O</div>
+    <div class="logoSub">2D · 余 响 回 廊 · 30 段连锁解谜</div>
+    <div class="tagline">一束回声在格间游走。<b>点亮第一枚记忆，门才会为第二枚打开</b>——<br>
+      前一步的余响，是后一步唯一的钥匙。<br>
+      转动镜面、调准频率，让声音一环扣一环地抵达出口。</div>
+    <div><button class="bigBtn" id="btnStart">开 始 聆 听</button></div>
+    <div><button class="secBtn" id="btnContinue">继续（第 <span id="contLv">1</span> 关）</button>
+      <button class="secBtn" id="btnLevelSel">选择关卡</button>
+      <button class="secBtn" id="btnHelp">玩法说明</button></div>
+    <div style="font-size:10px;color:#6f839c;margin-top:16px">纯 2D 链式解谜 · 30 关全部经过可解性验证 · 进度自动保存</div>
+  </div>
+</div>
+
+<div id="levels" class="screen hidden">
+  <div class="box">
+    <div class="panelHead">余 响 回 廊</div>
+    <div class="panelSub">共 30 关 · 5 章 · 每章引入新的连锁机关</div>
+    <div class="lvGrid" id="levelGrid"></div>
+    <div style="margin-top:16px"><button class="secBtn" id="levelsClose">返回</button></div>
+  </div>
+</div>
+
+<div id="help" class="screen hidden">
+  <div class="box">
+    <div class="panelHead">玩 法 说 明</div>
+    <div class="helpBox">
+      <b>目标</b>：让声源发出的回声，按 <b>1 → 2 → 3 …</b> 的顺序依次点亮所有记忆节点，最后抵达出口。<br><br>
+      <b>一环扣一环</b>：每点亮一枚节点，就会<b>打开它后面的那扇门</b>。没点亮第 1 枚，第 2 枚永远到不了——顺序错了、频率不对，回声就会散掉。前一步的结果直接改写后一步的地图。<br><br>
+      <b>你能做的</b>：<br>
+      · 点击 <span class="k">镜面 ◩</span> 切换斜向，把回声折向另一个方向<br>
+      · 点击 <span class="k">调频器 ◆</span> 切换青 / 橙 / 紫三种频率，节点只接受对应颜色<br>
+      · 点击 <span class="k">▶ 播放回声</span> 看它走到哪一步断开，再调整<br><br>
+      <b>操作</b>：撤销 / 重置 / 提示（指出第一个需要改的机关）/ 倍速播放。<br>
+      步数越少评价越高，已通关关卡会记录最佳步数。
+    </div>
+    <button class="secBtn" id="helpClose">明白了</button>
+  </div>
+</div>
+
+<div id="win" class="screen hidden">
+  <div class="box">
+    <div class="winTitle">回 声 归 位</div>
+    <div class="winText" id="winText"></div>
+    <div><button class="bigBtn" id="btnNext">下 一 段</button></div>
+    <div><button class="secBtn" id="btnWinLevels">选择关卡</button>
+      <button class="secBtn" id="btnReplay">再听一次</button></div>
+  </div>
+</div>
+
+<script src="./game.js"></script>
+</body>
+</html>
