@@ -1,5 +1,5 @@
-const CACHE = 'echo2d-v11-0-0';
-const ASSETS = ['./', './index.html', './game.js', './manifest.json', './enhance.js', './soundtrack.js', './icon-192.png', './icon-512.png'];
+const CACHE = 'echo2d-v12-0-0';
+const ASSETS = ['./', './index.html', './game.js', './manifest.json', './enhance.js', './theme-levels.js', './soundtrack.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
