@@ -40,8 +40,8 @@ API.attack=function(...args){
  const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;
  p.pendingSkill={id:'class-basic-'+id,kind:s.kind,dmg:s.dmg,desc:s.name};
  p.action=s.action;p.actT=0;p.actDur=Math.max(.34,(API.CLS&&API.CLS.CLS_BY_ID&&API.CLS.CLS_BY_ID[id]?.stats?.rate||.55)*.9);p.actDone=false;
- try{effect(id,p);if(G.emit)G.emit('toast',{text:s.name,kind:'info',dur:650});}catch(e){console.warn('[class combat]',e);}
+ try{if(G.emit)G.emit('toast',{text:s.name,kind:'info',dur:650});}catch(e){console.warn('[class combat]',e);}
  return ok;
 };
-window.__CLASS_COMBAT__={version:'2.0.0',styles};
+window.__CLASS_COMBAT__={version:'2.1.0',styles,effect};
 })();
