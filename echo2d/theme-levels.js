@@ -69,7 +69,19 @@ function build(spec){
  cells.push({type:'source',x:0,y:spec.startY},{type:'exit',x:path[path.length-1].x,y:path[path.length-1].y});
  return {idx:spec.id,n,chapter:4,nodeCount:spec.nodes,cells,path,solution,init,src:{x:0,y:spec.startY,dir:1,freq:0},name:spec.name,story:spec.desc,mechanic:spec.mechanic,themeId:spec.id};
 }
-const levels=stages.map(build);
+function buildResonance(){
+ const n=10, cells=[
+  {type:'source',x:0,y:4,freq:0},{type:'source',x:4,y:9,freq:1},
+  {type:'resonator',x:4,y:4,id:'dual-gate',window:2},
+  {type:'splitter',x:5,y:4,branches:[1,0]},
+  {type:'node',x:7,y:4,id:1,freq:0},{type:'exit',x:9,y:4}
+ ];
+ return {idx:7,n,chapter:4,nodeCount:1,cells,src:{x:0,y:4,dir:1,freq:0},
+  sources:[{id:'cyan',x:0,y:4,dir:1,freq:0},{id:'amber',x:4,y:9,dir:0,freq:1}],
+  solution:{mirrors:{},tuners:{}},init:{mirrors:{},tuners:{}},
+  name:'双声部·共振门',story:'两道声音从不同方向抵达。只有不同频率在短暂的时间窗内相遇，门才会回应。',mechanic:'双声源 · 双频共振 · 分裂声波',themeId:7};
+}
+const levels=stages.map(build).concat(buildResonance());
 function verify(level){
  const mk=Object.keys(level.solution.mirrors),tk=Object.keys(level.solution.tuners);
  const cfg={mirrors:{...level.init.mirrors},tuners:{...level.init.tuners}};
@@ -82,5 +94,5 @@ function verify(level){
  return {id:level.themeId,states,wins,solutionWins:api.simulate(level,level.solution).win,optimal:api.optimalMoves(level)};
 }
 function start(id){const level=levels.find(x=>x.themeId===id);return level?api.loadCustomLevel(level):false;}
-window.__ECHO_THEME__={version:'1.0.0',stages:stages.map(x=>({...x})),levels,verify,start};
+window.__ECHO_THEME__={version:'2.0.0',stages:stages.map(x=>({...x})),levels,verify,start};
 })();
