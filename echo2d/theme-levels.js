@@ -94,7 +94,36 @@ function buildSync(){
   solution:{mirrors:{},tuners:{46:0}},init:{mirrors:{},tuners:{46:0}},
   name:'同刻抵达',story:'两道回声必须分别抵达不同的同步台。它们相差不能超过一拍，而且必须来自指定的不同声源。',mechanic:'双声源 · 双点同步 · 时间窗机关',themeId:8};
 }
-const levels=stages.map(build).concat(buildResonance(),buildSync());
+function buildFilterRelay(){
+ const n=10,cells=[
+  {type:'source',x:0,y:4,freq:0},
+  {type:'filter',x:2,y:4,accept:0,output:1},
+  {type:'filter',x:5,y:4,accept:1,output:2},
+  {type:'delay',x:6,y:4,ticks:2},
+  {type:'node',x:7,y:4,id:1,freq:2},
+  {type:'exit',x:9,y:4}
+ ];
+ return {idx:9,n,chapter:4,nodeCount:1,cells,src:{x:0,y:4,dir:1,freq:0},
+  solution:{mirrors:{},tuners:{}},init:{mirrors:{},tuners:{}},
+  name:'频谱接力',story:'两道频率筛选器只允许指定频率通过，并将回声转换到下一频段。最后一道延迟阵列会改变抵达节奏。',mechanic:'频率筛选 · 频段转换 · 延迟阵列',themeId:9};
+}
+function buildDualFilter(){
+ const n=10,cells=[
+  {type:'source',x:0,y:3,freq:0},
+  {type:'filter',x:2,y:3,accept:0,output:1},
+  {type:'source',x:5,y:8,freq:2},
+  {type:'filter',x:5,y:6,accept:2,output:2},
+  {type:'resonator',x:5,y:3,id:'spectrum-duet',window:2},
+  {type:'tuner',x:6,y:3,init:0},
+  {type:'node',x:7,y:3,id:1,freq:0},
+  {type:'exit',x:9,y:3}
+ ];
+ return {idx:10,n,chapter:4,nodeCount:1,cells,src:{x:0,y:3,dir:1,freq:0},
+  sources:[{id:'silver',x:0,y:3,dir:1,freq:0},{id:'violet',x:5,y:8,dir:0,freq:2}],
+  solution:{mirrors:{},tuners:{36:0}},init:{mirrors:{},tuners:{36:0}},
+  name:'双谱共振',story:'两条路线必须分别通过不同频率的筛选器，再让不同频段的回声在共振器中相遇。共振开启后，调谐器把它们统一到记忆节点要求的频率。',mechanic:'双声源 · 双频筛选 · 共振 · 统一调频',themeId:10};
+}
+const levels=stages.map(build).concat(buildResonance(),buildSync(),buildFilterRelay(),buildDualFilter());
 function verify(level){
  const mk=Object.keys(level.solution.mirrors),tk=Object.keys(level.solution.tuners);
  const cfg={mirrors:{...level.init.mirrors},tuners:{...level.init.tuners}};
@@ -107,5 +136,5 @@ function verify(level){
  return {id:level.themeId,states,wins,solutionWins:api.simulate(level,level.solution).win,optimal:api.optimalMoves(level)};
 }
 function start(id){const level=levels.find(x=>x.themeId===id);return level?api.loadCustomLevel(level):false;}
-window.__ECHO_THEME__={version:'3.0.0',stages:stages.concat([{id:7,name:'双声部·共振门',desc:'两道不同频率的声音必须在时间窗内相遇，分裂器会把回声送往多个方向。',mechanic:'双声源 · 双频共振 · 分裂声波'},{id:8,name:'同刻抵达',desc:'两道回声必须来自不同声源，并在一拍内抵达不同的同步台。',mechanic:'双声源 · 双点同步 · 时间窗机关'}]).map(x=>({...x})),levels,verify,start};
+window.__ECHO_THEME__={version:'4.0.0',stages:stages.concat([{id:7,name:'双声部·共振门',desc:'两道不同频率的声音必须在时间窗内相遇，分裂器会把回声送往多个方向。',mechanic:'双声源 · 双频共振 · 分裂声波'},{id:8,name:'同刻抵达',desc:'两道回声必须来自不同声源，并在一拍内抵达不同的同步台。',mechanic:'双声源 · 双点同步 · 时间窗机关'},{id:9,name:'频谱接力',desc:'两道筛选器依次检查并转换回声频段，延迟阵列改变抵达节奏。',mechanic:'频率筛选 · 频段转换 · 延迟阵列'},{id:10,name:'双谱共振',desc:'两条声路分别通过不同频率筛选器，再以双频共振开启后续通道。',mechanic:'双声源 · 双频筛选 · 共振 · 统一调频'}]).map(x=>({...x})),levels,verify,start};
 })();
