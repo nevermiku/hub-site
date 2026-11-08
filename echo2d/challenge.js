@@ -23,6 +23,7 @@ function frame(){if(!active)return;const elapsed=(performance.now()-startAt)/100
  else hud.innerHTML='<strong>'+active.label+'</strong>　'+(active.mode==='steps'?'步数 '+moves+'/'+active.limit:'剩余 '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0'))+'　·　'+(active.mode==='blind'?'提示已封印':'完成当前关卡结算');
  if(active&&active.mode!=='steps'&&left<=0&&!active.failed){active.failed=true;hud.innerHTML='<strong>计时结束</strong>　仍可继续完成关卡，但不记录成绩';}
  raf=requestAnimationFrame(frame);}
+document.getElementById('btnReset')?.addEventListener('click',()=>{if(active&&active.mode==='steps'){active.failed=false;startAt=performance.now();}});
 row.addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;const mode=b.dataset.mode;let depth=1,label='',id=mode,limit=0;
  if(mode==='daily'){depth=2+(day%24);label='每日回响 · 第 '+depth+' 层';}
  if(mode==='blind'){depth=9+(day%18);label='盲听试炼 · 提示封印';}
