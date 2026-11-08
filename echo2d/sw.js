@@ -1,4 +1,4 @@
-const CACHE = 'echo2d-v5-0-0';
+const CACHE = 'echo2d-v6-0-0';
 const ASSETS = ['./', './index.html', './game.js', './manifest.json', './enhance.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,7 +15,6 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  // 页面走网络优先，其余缓存优先
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).then(r => {
