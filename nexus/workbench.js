@@ -24,7 +24,7 @@ const css=document.createElement('style');css.textContent=`
 `;document.head.append(css);
 const panel=document.createElement('section');panel.id='evidenceWorkbench';panel.innerHTML='<div class="ew-head"><strong>证据对照台 / WORKBENCH</strong><small id="ewCount">已选 0 / 4</small></div><p class="ew-help">点击上方两条或更多现场证据，将它们放在一起核对。保存后会留在本机，不会改变案件的标准答案。</p><div class="ew-selected" id="ewSelected">尚未选择证据。建议至少选择两条。</div><div class="ew-tools"><button class="ew-save" id="ewSave" disabled>保存为对照笔记</button><button id="ewExport">导出笔记</button><button id="ewImport">导入备份</button><input id="ewFile" type="file" accept="application/json,.json"></div><div id="ewNotes"></div>';
 list.insertAdjacentElement('afterend',panel);
-const $=s=>panel.querySelector(s),esc=s=>String(s).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[c])),caseId=()=>{const m=(document.querySelector('#caseNo')?.textContent||'').match(/FILE\s+(\d+)/i);return m?Number(m[1]):0};
+const $=s=>panel.querySelector(s),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),caseId=()=>{const m=(document.querySelector('#caseNo')?.textContent||'').match(/FILE\s+(\d+)/i);return m?Number(m[1]):0};
 function currentClues(){return Array.from(list.querySelectorAll('li')).map((li,i)=>({i,text:li.textContent.replace(/^\s*0?\d+\s*/,'').trim()}))}
 function render(){
  const clues=currentClues();list.querySelectorAll('li').forEach((li,i)=>li.classList.toggle('ew-picked',selected.includes(i)));
