@@ -21,6 +21,6 @@ let index=0;function render(){const s=steps[index];$('#ntCount').textContent=Str
 function close(){modal.classList.remove('on');try{localStorage.setItem('nexus-tutorial-v1','done')}catch(e){}}
 function show(i){index=Math.max(0,Math.min(steps.length-1,i));render();modal.classList.add('on');}
 $('#ntPrev').onclick=()=>{if(index>0){index--;render();}};$('#ntNext').onclick=()=>{if(index<steps.length-1){index++;render();}else close();};$('#ntSkip').onclick=close;
-if(!localStorage.getItem('nexus-tutorial-v1'))show(0);
+let seen=false;try{seen=localStorage.getItem('nexus-tutorial-v1')==='done'}catch(e){}if(!seen)show(0);
 window.__NEXUS_TUTORIAL__={show,close};
 })();
