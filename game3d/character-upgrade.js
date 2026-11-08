@@ -54,6 +54,21 @@ function upgradeCharacter(){
   const edge=mesh(weapon,geo.box,M.cyan,[0,0,.018],[.018,.78,.012],[0,0,0]);
   edge.position.x=.035;
  }
+ // 二刀流副手：左手独立持刃，不再把两把刀挤在右手模型里。
+ const cls=API.SAVE&&API.SAVE.cls;
+ if(cls==='dual'&&arms.L&&arms.L.el&&!arms.L.el.userData.__dualOffhand){
+  const hand=new T.Group();hand.name='dual-offhand-blade';
+  hand.position.set(0,-.34,.1);hand.rotation.set(-.22,0,-.3);arms.L.el.add(hand);
+  const steel=mat(0xd9e7f2,.96,.16,0x243e58),edge=mat(0x8ee8ff,.9,.18,0x176c8c),gold=M.gold;
+  mesh(hand,geo.box,M.dark,[0,-.12,0],[.055,.27,.055]);
+  mesh(hand,geo.box,gold,[0,-.27,0],[.09,.055,.08]);
+  mesh(hand,geo.box,gold,[0,.015,0],[.24,.045,.075]);
+  mesh(hand,geo.box,steel,[0,.36,0],[.085,.68,.026]);
+  mesh(hand,geo.box,edge,[-.044,.36,.016],[.012,.58,.008]);
+  mesh(hand,geo.box,edge,[.044,.36,.016],[.012,.58,.008]);
+  mesh(hand,geo.cone,steel,[0,.73,0],[.055,.13,.025]);
+  arms.L.el.userData.__dualOffhand=hand;
+ }
  p.userData.__mobileArmorV2=true;
 }
 function buildSkyline(){
