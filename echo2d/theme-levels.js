@@ -21,7 +21,7 @@ function build(spec){
  }
  const turnSet=new Set(turns.map(t=>t.index));
  const straight=path.map((p,i)=>i).filter(i=>!turnSet.has(i)&&i>0&&i<path.length-1);
- if(straight.length<spec.nodes+spec.tuners+spec.nodes-1) throw Error('route too short '+spec.id);
+ if(straight.length<spec.nodes+Math.min(spec.tuners,2)) throw Error('route too short '+spec.id);
  const nodeIdx=[];
  for(let q=0;q<spec.nodes;q++){let target=Math.round((q+1)*(straight.length-1)/(spec.nodes+1));let pick=straight[target];while(nodeIdx.includes(pick))pick=straight.find(i=>!nodeIdx.includes(i)&&i>pick);nodeIdx.push(pick);}
  nodeIdx.sort((a,b)=>a-b);
