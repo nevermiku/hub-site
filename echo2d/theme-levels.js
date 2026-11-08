@@ -83,17 +83,16 @@ function buildResonance(){
 }
 function buildSync(){
  const n=10,cells=[
-  {type:'source',x:0,y:3,freq:0},{type:'source',x:0,y:5,freq:1},
-  {type:'sync',x:3,y:3,group:'duet-lock',pad:'A',window:1},
-  {type:'sync',x:3,y:5,group:'duet-lock',pad:'B',window:1},
-  {type:'mirror',x:5,y:5,init:0},{type:'mirror',x:5,y:3,init:0},
-  {type:'tuner',x:6,y:3,init:0},
-  {type:'node',x:7,y:3,id:1,freq:0},{type:'exit',x:9,y:3}
+  {type:'source',x:0,y:4,freq:0},{type:'source',x:2,y:4,freq:1},
+  {type:'sync',x:3,y:4,group:'duet-lock',pad:'A',source:'first',window:1},
+  {type:'sync',x:5,y:4,group:'duet-lock',pad:'B',source:'second',window:1},
+  {type:'tuner',x:6,y:4,init:0},
+  {type:'node',x:7,y:4,id:1,freq:0},{type:'exit',x:9,y:4}
  ];
- return {idx:8,n,chapter:4,nodeCount:1,cells,src:{x:0,y:3,dir:1,freq:0},
-  sources:[{id:'first',x:0,y:3,dir:1,freq:0},{id:'second',x:0,y:5,dir:1,freq:1}],
-  solution:{mirrors:{35:0,55:0},tuners:{36:0}},init:{mirrors:{35:0,55:0},tuners:{36:0}},
-  name:'同刻抵达',story:'两道回声必须分别抵达不同的同步台。它们相差不能超过一拍，而且必须来自不同声源。',mechanic:'双声源 · 双点同步 · 时间窗机关',themeId:8};
+ return {idx:8,n,chapter:4,nodeCount:1,cells,src:{x:0,y:4,dir:1,freq:0},
+  sources:[{id:'first',x:0,y:4,dir:1,freq:0},{id:'second',x:2,y:4,dir:1,freq:1}],
+  solution:{mirrors:{},tuners:{46:0}},init:{mirrors:{},tuners:{46:0}},
+  name:'同刻抵达',story:'两道回声必须分别抵达不同的同步台。它们相差不能超过一拍，而且必须来自指定的不同声源。',mechanic:'双声源 · 双点同步 · 时间窗机关',themeId:8};
 }
 const levels=stages.map(build).concat(buildResonance(),buildSync());
 function verify(level){
