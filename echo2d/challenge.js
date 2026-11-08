@@ -15,9 +15,10 @@ let active=null,startAt=0,raf=0,originalHints=3,trialBest={};
 try{trialBest=JSON.parse(localStorage.getItem('echo-trial-records-v2')||'{}')}catch{}
 const day=Math.floor(Date.now()/86400000);
 function stop(){active=null;cancelAnimationFrame(raf);hud.classList.remove('on');const hint=document.getElementById('btnHint');if(hint)hint.disabled=false;}
-function finish(){if(!active||active.done)return;active.done=true;const elapsed=Math.floor((performance.now()-startAt)/1000),moves=API.S.moves||0;const old=trialBest[active.id];const score=active.mode==='steps'?moves:elapsed;const better=old==null||(active.mode==='steps'?score<old:score<old);if(better){trialBest[active.id]=score;try{localStorage.setItem('echo-trial-records-v2',JSON.stringify(trialBest))}catch{}}hud.innerHTML='<strong>试炼完成！</strong> '+elapsed+' 秒 · '+moves+' 步 · 最佳 '+(trialBest[active.id])+(active.mode==='steps'?' 步':' 秒');setTimeout(stop,4500);}
+function finish(){if(!active||active.done)return;active.done=true;const elapsed=Math.floor((performance.now()-startAt)/1000),moves=API.S.moves||0;const old=trialBest[active.id];const score=active.mode==='steps'?moves:elapsed;const better=!active.failed&&(old==null||(active.mode==='steps'?score<old:score<old));if(better){trialBest[active.id]=score;try{localStorage.setItem('echo-trial-records-v2',JSON.stringify(trialBest))}catch{}}hud.innerHTML='<strong>试炼完成！</strong> '+elapsed+' 秒 · '+moves+' 步 · 最佳 '+(trialBest[active.id])+(active.mode==='steps'?' 步':' 秒');setTimeout(stop,4500);}
 function frame(){if(!active)return;const elapsed=(performance.now()-startAt)/1000,left=Math.max(0,180-elapsed);const moves=API.S.moves||0;
  if(active.mode==='steps'&&moves>active.limit&&!active.failed){active.failed=true;hud.innerHTML='<strong>步数封印已破</strong> · 上限 '+active.limit+' 步，点击重置后可再试';}
+ else if(active.failed&&active.mode==='steps'){hud.innerHTML='<strong>步数封印已破</strong> · 上限 '+active.limit+' 步，点击重置后可再试';}
  else if(API.S.won)finish();
  else hud.innerHTML='<strong>'+active.label+'</strong>　'+(active.mode==='steps'?'步数 '+moves+'/'+active.limit:'剩余 '+Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0'))+'　·　'+(active.mode==='blind'?'提示已封印':'完成当前关卡结算');
  if(active&&active.mode!=='steps'&&left<=0&&!active.failed){active.failed=true;hud.innerHTML='<strong>计时结束</strong>　仍可继续完成关卡，但不记录成绩';}
