@@ -7,9 +7,17 @@ const box=(g,m,x,y,z,sx,sy,sz)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);o
 let gGroup;
 function build(floor,biome){
 const world=G.world;if(!world||!world.worldGroup)return;
+const raw=String(biome||'').toLowerCase();
+const id=(raw.includes('forest')||raw.includes('森林')||raw.includes('林地'))?'forest':
+(raw.includes('crystal')||raw.includes('晶')||raw.includes('洞窟'))?'crystal':
+(raw.includes('ruin')||raw.includes('遗迹')||raw.includes('墓'))?'ruins':
+(raw.includes('lava')||raw.includes('熔岩')||raw.includes('灰烬'))?'lava':
+(raw.includes('ocean')||raw.includes('海')||raw.includes('潮'))?'ocean':
+(raw.includes('snow')||raw.includes('ice')||raw.includes('冰')||raw.includes('雪'))?'snow':
+String(world.biome&&world.biome.id||'meadow').toLowerCase();
 if(old){world.worldGroup.remove(old);old.traverse(o=>{if(o.geometry)o.geometry.dispose();});old=null;}
 gGroup=old=new T.Group();old.name='aincrad-biome-landmarks';
-const id=String(world.biome&&world.biome.id||'meadow'),seed=((floor*2654435761)^(id.length*2246822519))>>>0;
+const seed=((floor*2654435761)^(id.length*2246822519))>>>0;
 let state=seed||1;const rnd=()=>{state=(Math.imul(state,1664525)+1013904223)>>>0;return state/4294967296;};
 const height=(x,z)=>world.h?world.h(x,z):0;
 function tree(x,z){const y=height(x,z),h=3+rnd()*3;box(new T.CylinderGeometry(.12,.2,h*.42,6),M.bark,x,y+h*.21,z,1,1,1);for(let k=0;k<3;k++){const c=new T.Mesh(new T.ConeGeometry(1.05-k*.18,1.8,7),k%2?M.leaf:M.leaf2);c.position.set(x,y+h*.35+k*.72,z);c.scale.set(1,1+rnd()*.2,1);c.castShadow=true;gGroup.add(c);}}
@@ -28,7 +36,6 @@ else{pillar(x,z);}
 }
 world.worldGroup.add(old);
 }
-G.on('floor',e=>{const f=Number(e&&e.f||G.floor||1),b=e&&e.biome||'';setTimeout(()=>build(f,b),0);});
-if(G.world.biome)build(Number(G.floor||1),G.world.biome.id);
-window.__AINCRAD_LANDSCAPE__={version:'1.0.0',refresh:()=>build(Number(G.floor||1),G.world.biome&&G.world.biome.id)};
+G.on('floor',e=>{const f=Number(e&&e.f||1),b=e&&e.biome||'';setTimeout(()=>{try{build(f,b);}catch(err){console.warn('[AINCRAD landscape]',err);}},0);});
+window.__AINCRAD_LANDSCAPE__={version:'1.1.0',refresh:()=>build(Number(G.floor||1),G.world.biome&&G.world.biome.n||'')};
 })();
