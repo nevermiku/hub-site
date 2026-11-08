@@ -92,6 +92,12 @@ function render(){
  main.querySelectorAll('[data-answer]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.answer;main.querySelectorAll('[data-answer]').forEach(x=>x.classList.toggle('selected',x===b));}));
  $('hintBtn').onclick=()=>{$('feedback').textContent='提示：'+c.hint;$('feedback').className='feedback';};
  $('checkBtn').onclick=()=>check();
+ if(done){
+   $('feedback').textContent='本章已完成。'+c.success;
+   $('feedback').className='feedback good';
+   $('checkBtn').textContent=current<2?'进入下一章':'查看结局';
+   $('checkBtn').onclick=()=>{if(current<2){current++;selected='';render();}else{render();}};
+ }
 }
 function check(){
  const c=chapters[current];let val=current===2?($('answerInput').value||'').trim().replace(/[’']/g,"'").replace(/s+/g,' ').toUpperCase():selected;
