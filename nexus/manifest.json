@@ -1,6 +1,7 @@
 {
   "name": "NEXUS · 衍尾之宙",
   "short_name": "NEXUS",
+  "description": "五卷二十案的原创长篇悬疑推理游戏",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#080d18",
