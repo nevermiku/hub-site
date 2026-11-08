@@ -289,7 +289,7 @@
           events.push({ t: 'exitClosed', x: nx, y: ny });
           continue;
         }
-        nw.push({ x: nx, y: ny, dx, dy, freq, trail, wait: c.type === 'delay' ? Math.max(1, c.ticks || 2) : 0 });
+        nw.push({ ...w, x: nx, y: ny, dx, dy, freq, trail, wait: c.type === 'delay' ? Math.max(1, c.ticks || 2) : 0 });
         if (nw.length > 400) break;
       }
       waves = nw;
