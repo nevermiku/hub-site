@@ -22,9 +22,15 @@ function build(spec){
  const turnSet=new Set(turns.map(t=>t.index));
  const straight=path.map((p,i)=>i).filter(i=>!turnSet.has(i)&&i>0&&i<path.length-1);
  if(straight.length<spec.nodes+Math.min(spec.tuners,2)) throw Error('route too short '+spec.id);
- const nodeIdx=[];
- for(let q=0;q<spec.nodes;q++){let target=Math.round((q+1)*(straight.length-1)/(spec.nodes+1));let pick=straight[target];while(nodeIdx.includes(pick))pick=straight.find(i=>!nodeIdx.includes(i)&&i>pick);nodeIdx.push(pick);}
- nodeIdx.sort((a,b)=>a-b);
+ const nodeIdx=[];let lastNode=-1;
+ for(let q=0;q<spec.nodes;q++){
+  const desired=Math.round((q+1)*(path.length-1)/(spec.nodes+1));
+  const remaining=spec.nodes-q-1;
+  const candidates=straight.filter(i=>i>lastNode&&straight.filter(j=>j>i).length>=remaining);
+  if(!candidates.length)throw Error('not enough node slots '+spec.id);
+  const pick=candidates.reduce((best,i)=>Math.abs(i-desired)<Math.abs(best-desired)?i:best,candidates[0]);
+  nodeIdx.push(pick);lastNode=pick;
+ }
  const occupied=new Set([...nodeIdx,...turnSet]);
  const gateIdx=[];
  for(let q=0;q<nodeIdx.length-1;q++){let g=nodeIdx[q]+1;while(g<nodeIdx[q+1]&&(occupied.has(g)||gateIdx.includes(g)))g++;if(g<nodeIdx[q+1])gateIdx.push(g);}
@@ -34,10 +40,7 @@ function build(spec){
   const candidates=straight.filter(i=>i>lower&&i<target&&!occupied.has(i)&&!gateIdx.includes(i)&&!tunerIdx.includes(i));
   if(candidates.length)tunerIdx.push(candidates[Math.floor((candidates.length-1)/2)]);
  }
- if(tunerIdx.length<spec.tuners){
-  const fallback=straight.filter(i=>!occupied.has(i)&&!gateIdx.includes(i)&&!tunerIdx.includes(i)&&i<nodeIdx[nodeIdx.length-1]);
-  while(tunerIdx.length<spec.tuners&&fallback.length)tunerIdx.push(fallback.shift());
- }
+
  const solution={mirrors:{},tuners:{}},init={mirrors:{},tuners:{}};
  for(const t of turns){const k=key(path[t.index].x,path[t.index].y,n);solution.mirrors[k]=t.state;init.mirrors[k]=1-t.state;}
  const tunerAt=new Map();
