@@ -61,7 +61,7 @@ function buildSkyline(){
  if(decor&&decor.parent)decor.parent.remove(decor);
  decor=new T.Group();decor.name='aincrad-floating-capital-v2';
  const stone=mat(0x435b75,.68,.36),roof=mat(0x253e59,.72,.28),warm=mat(0xf1c879,.48,.26,0x75501b),crystal=mat(0x69dfff,.55,.18,0x1c9ec8);
- const add=(g,m,x,y,z,sx,sy,sz)=>mesh(decor,g,m,[x,y,z],[sx,sy,sz]);
+ const add=(g,m,x,y,z,sx,sy,sz)=>{const o=mesh(decor,g,m,[x,y,z],[sx,sy,sz]);o.castShadow=false;o.receiveShadow=false;return o;};
  // 远景浮空城：塔楼、尖顶、环形连廊、悬浮晶柱
  for(let i=0;i<12;i++){
   const a=i*Math.PI/6,r=29+(i%3)*2.8,x=Math.cos(a)*r,z=Math.sin(a)*r,h=7+(i%4)*2.4;
