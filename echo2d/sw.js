@@ -1,4 +1,4 @@
-const CACHE = 'echo2d-v8-0-0';
+const CACHE = 'echo2d-v9-0-0';
 const ASSETS = ['./', './index.html', './game.js', './manifest.json', './enhance.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
