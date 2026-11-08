@@ -12,7 +12,7 @@ const styles={
  rogue:{kind:'dash',dmg:1.18,action:'attack',name:'盗贼 · 突进毒刃'},
  archer:{kind:'bow',dmg:.56,action:'bow',name:'弓手 · 远程箭击'},
  mage:{kind:'projectile',dmg:.58,action:'cast',name:'法师 · 奥术弹'},
- cleric:{kind:'aoe',dmg:.82,action:'attack',name:'牧师 · 圣光脉冲'}
+ cleric:{kind:'aoe',dmg:.82,action:'cast',name:'牧师 · 圣光脉冲'}
 };
 const baseSlash=FX.slash.bind(FX);
 FX.slash=function(x,y,z,dir,color){
