@@ -1153,8 +1153,18 @@
       setTimeout(() => { $('win').classList.remove('hidden'); playSong(S.song); }, 420);
     } else {
       const last = r.activated.length;
+      const fault = r.trace.reduce((found, frame) => found || frame.events.find(e =>
+        e.t === 'wrong' || e.t === 'gate' || e.t === 'locked' || e.t === 'block'), null);
       AU.fragments(S.melody);   // 失败也把已点亮的音倒着放一遍，像散掉的回声
-      toast(last ? '回声在第 ' + (last + 1) + ' 枚记忆前散了，再调一调' : '回声还没走到第一枚记忆，检查镜面', 3000);
+      let diagnosis = last ? '回声在第 ' + (last + 1) + ' 枚记忆前散了。' : '回声还没走到第一枚记忆。';
+      if (fault) {
+        const where = '（第 ' + (fault.x + 1) + ' 列 / 第 ' + (fault.y + 1) + ' 行）';
+        if (fault.t === 'wrong') diagnosis += '这里的频率与记忆节点不匹配' + where + '，检查前一个调频器。';
+        else if (fault.t === 'gate') diagnosis += '这道门尚未开启' + where + '，确认前一枚记忆是否按顺序点亮。';
+        else if (fault.t === 'locked') diagnosis += '这里的记忆顺序被锁定' + where + '，先寻找编号更小的节点。';
+        else diagnosis += '回声撞上了阻断墙' + where + '，重新检查镜面的反射方向。';
+      } else diagnosis += '检查镜面方向与调频器，再播放一次。';
+      toast(diagnosis, 4200);
     }
   }
   function undo() {
