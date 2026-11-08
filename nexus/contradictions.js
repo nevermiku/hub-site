@@ -1,0 +1,43 @@
+(()=>{'use strict';
+const SAVE='nexus-casebook-v2',KEY='nexus-contradiction-lab-v1',$=s=>document.querySelector(s);
+const cases=[
+{id:'c01',title:'证词一：灯塔里的目击者',level:'进阶',need:[2,8],statement:'顾临川在补充笔录中称：“02:08，我亲眼看见主灯熄灭；我当时一直站在控制室中央。”',evidence:['卷宗02：机械钟被人为拨慢九分钟，港区授时记录在02:17保持准确。','桌面调查记录：控制室观察窗被封闭，控制室内无法直接看见主灯。','卷宗08：灯塔信号中断与汽笛记录存在可校准的先后差。'],question:'这段证词中，哪一部分已经与现有证据发生直接冲突？',options:['“02:08”这个时间本身一定是伪造的','“亲眼看见主灯熄灭”这一感知来源','顾临川当晚一定离开过控制室'],answer:1,why:'控制室无法直接观察主灯，因此“亲眼看见”与空间条件冲突。机械钟时间错误并不能证明顾临川离开现场，也不能单凭这一点判定他撒谎的全部内容。',limit:'能确认的是目击方式不成立；不能据此确认他当时在哪里，或由谁操作了灯塔。'},
+{id:'c02',title:'证词二：从未离馆的馆长',level:'进阶',need:[5,18],statement:'许照称：“02:00之后我没有离开档案馆，维护证书也从未交给其他人使用。”',evidence:['卷宗05：门禁副本记录许照账号01:54离馆、02:26重新入馆。','卷宗18：维护证书副本曾被复制并进入维护人员可接触的流转链。','注意：门禁记录是账号刷卡记录，证书记录是凭据流转记录。'],question:'哪项判断最符合证据边界？',options:['许照本人必定在01:54离开并亲手复制证书','“从未离馆”和“凭据从未转交”两项说法都受到记录挑战，但操作者仍需独立确认','门禁和证书记录都是伪造的'],answer:1,why:'门禁副本与“从未离馆”不一致，证书副本流转也与“从未交给他人”不一致。但账号使用和凭据流转都不能自动证明具体操作者身份。',limit:'可以质疑证词与记录的一致性，不能把账号或权限组直接等同于本人亲自操作。'},
+{id:'c03',title:'证词三：没有返港的拖船',level:'专家',need:[12,15],statement:'周既白称：“备用拖船离港后没有返回旧船坞，我也没有接触过维修水道。”',evidence:['卷宗12：潮线与吃水深度支持一艘符合备用拖船吃水特征的船在02:44靠岸；船底红色矿粉指向旧船坞内侧。','卷宗15：地下维修水道与观察窗夹层相通，存在绕开常规通道的路线。','卷宗12同时指出摄像头在关键时段被远程转向。'],question:'证据目前最有力地反驳了哪一项？',options:['拖船一定由周既白驾驶','“没有船只返回旧船坞”这一绝对说法','周既白一定知道维修水道的全部结构'],answer:1,why:'靠岸潮线、吃水特征和船底矿粉共同支持有船返回旧船坞区域，足以挑战“没有返回”的绝对说法。它们不能独立识别驾驶者，也不能证明周既白是否了解全部通道。',limit:'物理路线证据可以反驳绝对否认，但不能单独完成乘员身份认定。'},
+{id:'c04',title:'证词四：死亡证明与短波回信',level:'专家',need:[21,23],statement:'档案管理员称：“死亡证明手续完整；那封短波回信只能由闻秋本人发出。”',evidence:['卷宗21：死亡证明的签发日期、印章批次和遗体交接栏存在矛盾。','卷宗22：死亡公告之后出现使用旧校验节奏的短波信号，但密钥曾被复制。','卷宗23：接收缓存曾被人工清理，账号属于档案管理权限组。'],question:'哪项结论能同时解释三组证据而不过度推断？',options:['闻秋已被证实存活，并亲自发送回信','死亡证明可信，短波信号必定是伪造','死亡记录可靠性受到质疑，旧凭据被使用且记录遭清理，但发信人身份与闻秋生死仍未证实'],answer:2,why:'死亡证明存在程序性矛盾，短波认证材料又可能被复制，缓存清理说明证据链受到干预。三者提高了事件可疑程度，却没有直接证明闻秋的生死或发信人的身份。',limit:'这是身份未明的高价值线索，不是“闻秋仍然活着”的确证。'},
+{id:'c05',title:'证词五：只执行过一次删除',level:'专家',need:[19,23],statement:'系统维护员称：“我只按工单清理过一次缓存，档案馆权限组没有参与后续记录处理。”',evidence:['卷宗19：档案馆权限组账号曾执行记录清理操作。','卷宗23：短波接收缓存也被人工删除，终端账号属于档案管理权限组。','两次操作的时间、终端和具体登录者仍需进一步核对。'],question:'现有证据能否直接证明维护员说谎？',options:['能，两次删除都必定由同一个人执行','不能直接确认个人说谎；但“权限组未参与后续处理”的说法与两处权限痕迹冲突','不能，权限组记录完全没有证明价值'],answer:1,why:'两处记录都指向档案管理权限组，足以挑战“权限组没有参与”的说法；但同一权限组可能包含多人、共享终端或代操作，尚不能认定具体个人。',limit:'组织权限层面的关联已经出现，个人身份链仍未闭合。'}
+];
+let state={solved:[],attempts:{}};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}if(!Array.isArray(state.solved))state.solved=[];if(!state.attempts||typeof state.attempts!=='object')state.attempts={};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function cleared(){try{const s=JSON.parse(localStorage.getItem(SAVE)||'{}');return new Set(Array.isArray(s.cleared)?s.cleared:[])}catch(e){return new Set()}}
+const css=`
+#nexus-contradiction-btn{margin:8px 0 0 8px;border:1px solid #d98c8c88;border-radius:11px;padding:10px 13px;background:#3a2028;color:#ffe4e4;font-size:12px}
+#nexus-contradiction{position:fixed;inset:0;z-index:10090;display:none;overflow:auto;background:#100d18f8;padding:18px 14px max(24px,env(safe-area-inset-bottom))}
+#nexus-contradiction.open{display:block}#nexus-contradiction .wrap{width:min(900px,100%);margin:auto}
+#nexus-contradiction .top{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;background:#100d18f5;padding:8px 0 14px;z-index:2}
+#nexus-contradiction h2{margin:5px 0;color:#f0b2a8;letter-spacing:2px;font-size:22px}
+#nexus-contradiction p{font-size:12px;color:#c2b9c8;line-height:1.8}
+#nexus-contradiction button{border:1px solid #ffffff25;border-radius:9px;background:#2b2434;color:#f5edf7;padding:9px 12px}
+#nexus-contradiction .case{border:1px solid #ffffff20;border-radius:14px;background:#1a1522;padding:15px;margin:12px 0}
+#nexus-contradiction .case.locked{opacity:.48}
+#nexus-contradiction h3{margin:0 0 8px;color:#f0c5a9;font-size:15px}
+#nexus-contradiction .statement{border-left:3px solid #e49c83;background:#241923;padding:12px;color:#fff0e8;font-size:13px;line-height:1.9;border-radius:0 9px 9px 0}
+#nexus-contradiction .evidence{margin:8px 0;padding:9px 11px;background:#141c2a;border:1px solid #ffffff12;border-radius:8px;color:#cbd6e5;font-size:11px;line-height:1.8}
+#nexus-contradiction .opts{display:grid;gap:7px;margin:12px 0}
+#nexus-contradiction .opts label{display:flex;gap:9px;padding:10px;border:1px solid #ffffff18;border-radius:9px;color:#e1dce7;font-size:12px;line-height:1.7}
+#nexus-contradiction .result{margin-top:10px;padding:11px;border-radius:9px;background:#121c28;color:#d9e2ed;font-size:12px;line-height:1.8}
+#nexus-contradiction .good{border:1px solid #70d6a366}#nexus-contradiction .bad{border:1px solid #e58b8b66}
+#nexus-contradiction .meta{color:#a99bad;font-size:10px}
+@media(max-width:600px){#nexus-contradiction h2{font-size:18px}#nexus-contradiction .top{align-items:flex-start}}
+`;
+const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
+const panel=document.createElement('section');panel.id='nexus-contradiction';panel.innerHTML='<div class="wrap"><div class="top"><div><small style="color:#b49baa">NEXUS · TESTIMONY CONTRADICTION LAB</small><h2>证词矛盾实验室</h2><p>不要猜谁是凶手。先找出证词与物证真正冲突的部分，再判断证据还不能证明什么。</p></div><button id="ncl-close">关闭 ×</button></div><div id="ncl-list"></div></div>';document.body.appendChild(panel);
+function render(){const done=cleared();$('#ncl-list').innerHTML=cases.map(c=>{const open=c.need.every(n=>done.has(n-1)),solved=state.solved.includes(c.id);if(!open)return '<article class="case locked"><h3>🔒 '+esc(c.title)+'</h3><p>完成卷宗 '+c.need.map(n=>String(n).padStart(2,'0')).join('、')+' 后开放。当前进度：'+done.size+'/23。</p></article>';return '<article class="case" data-case="'+c.id+'"><div class="meta">'+esc(c.level)+' · 解锁卷宗 '+c.need.map(n=>String(n).padStart(2,'0')).join(' / ')+' · 尝试 '+(state.attempts[c.id]||0)+' 次</div><h3>'+(solved?'✓ ':'◇ ')+esc(c.title)+'</h3><div class="statement">'+esc(c.statement)+'</div>'+c.evidence.map((v,i)=>'<div class="evidence">证据 '+(i+1)+'：'+esc(v)+'</div>').join('')+'<b style="font-size:12px;color:#f0e9f2">'+esc(c.question)+'</b><div class="opts">'+c.options.map((o,i)=>'<label><input type="radio" name="ncl-'+c.id+'" value="'+i+'" '+(solved?'disabled':'')+'><span>'+esc(o)+'</span></label>').join('')+'</div><button data-submit="'+c.id+'" '+(solved?'disabled':'')+'>'+(solved?'已完成复核':'提交判断')+'</button><div class="result '+(solved?'good':'')+'" '+(solved?'':'hidden')+'>'+(solved?'<b>判断成立</b><br>'+esc(c.why)+'<br><b>证据边界：</b>'+esc(c.limit):'')+'</div></article>';}).join('');}
+function open(){render();panel.classList.add('open')}function close(){panel.classList.remove('open')}
+$('#ncl-close').onclick=close;
+panel.addEventListener('click',e=>{const b=e.target.closest('[data-submit]');if(!b)return;const c=cases.find(x=>x.id===b.dataset.submit),card=b.closest('.case'),v=card.querySelector('input[name="ncl-'+c.id+'"]:checked'),box=card.querySelector('.result');if(!v){box.hidden=false;box.className='result bad';box.textContent='先选择一个判断。';return;}state.attempts[c.id]=(state.attempts[c.id]||0)+1;if(Number(v.value)!==c.answer){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}box.hidden=false;box.className='result bad';box.textContent='这项判断超出了证据能够支持的范围。重新区分“记录显示了什么”和“谁亲自做了什么”。';const meta=card.querySelector('.meta');meta.textContent=meta.textContent.replace(/尝试 \d+ 次/,'尝试 '+state.attempts[c.id]+' 次');return;}state.solved.push(c.id);try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}box.hidden=false;box.className='result good';box.innerHTML='<b>复核成立</b><br>'+esc(c.why)+'<br><b>证据边界：</b>'+esc(c.limit);b.disabled=true;b.textContent='已完成复核';card.querySelector('h3').textContent='✓ '+c.title;});
+const attach=()=>{const target=$('#evidenceBtn');if(target&&!$('#nexus-contradiction-btn')){const b=document.createElement('button');b.id='nexus-contradiction-btn';b.textContent='证词矛盾实验室';b.onclick=open;target.after(b);}};
+new MutationObserver(attach).observe(document.body,{childList:true,subtree:true});attach();
+window.addEventListener('storage',e=>{if(e.key===SAVE&&panel.classList.contains('open'))render();});
+window.__NEXUS_CONTRADICTIONS__={version:'1.0.0',count:cases.length,get solved(){return [...state.solved]},open};
+})();
