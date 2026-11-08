@@ -1,0 +1,19 @@
+/* 刀域突围 · 独立网页入口视觉层 */
+#title{background:radial-gradient(ellipse at 72% 16%,rgba(219,133,73,.22),transparent 34%),radial-gradient(ellipse at 18% 78%,rgba(72,139,170,.2),transparent 36%),linear-gradient(145deg,#0a1522 0%,#101c2b 48%,#070d16 100%)}
+#title:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.23;background:linear-gradient(90deg,transparent 49.8%,#9fc4e51a 50%,transparent 50.2%),linear-gradient(0deg,transparent 49.8%,#9fc4e51a 50%,transparent 50.2%);background-size:54px 54px;mask-image:linear-gradient(90deg,transparent,#000 35%,#000 75%,transparent)}
+#title .titleBox{position:relative;width:min(980px,96vw);padding:clamp(18px,3vw,32px);border:1px solid rgba(194,218,239,.16);border-radius:26px;background:linear-gradient(145deg,rgba(13,27,43,.76),rgba(8,16,27,.66));box-shadow:0 30px 100px #0009,inset 0 1px #fff1;backdrop-filter:blur(16px)}
+#title .logo{font-size:clamp(36px,6vw,64px);letter-spacing:12px}
+#title .logoSub{color:#c6d7e8;letter-spacing:5px}
+#title .tagline{font-size:13px;line-height:2;color:#b5c7d9}
+.site-kicker{display:inline-flex;align-items:center;gap:9px;margin:0 auto 16px;padding:7px 12px;border:1px solid #e3b87955;border-radius:30px;background:#d49b3a12;color:#f2c982;font-size:10px;letter-spacing:2px}
+.site-kicker i{width:7px;height:7px;border-radius:50%;background:#f4c978;box-shadow:0 0 12px #f4c978;display:inline-block}
+.site-specs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:740px;margin:14px auto 18px}
+.site-spec{padding:10px 8px;border:1px solid #ffffff18;border-radius:12px;background:#ffffff08;text-align:left}
+.site-spec b{display:block;font-size:17px;color:#f4d59c;letter-spacing:1px}
+.site-spec span{display:block;font-size:9px;color:#9eb1c6;margin-top:4px}
+.site-features{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:10px auto 4px}
+.site-features span{padding:6px 10px;border:1px solid #ffffff19;border-radius:18px;color:#c4d3e2;font-size:10px;background:#ffffff08}
+.site-foot{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:14px;color:#7f93a9;font-size:9px;letter-spacing:1px}
+#title .bigBtn{box-shadow:0 8px 30px #df974b44;border:1px solid #ffe2a088}
+#title .clsCard{backdrop-filter:blur(8px)}
+@media(max-width:620px){#title .titleBox{padding:17px 13px;border-radius:18px}#title .logo{letter-spacing:6px}.site-specs{grid-template-columns:repeat(2,1fr);gap:6px}.site-spec{padding:8px}.site-spec b{font-size:15px}#title .tagline{font-size:11px;margin:10px auto 12px}.site-kicker{margin-bottom:10px}}
