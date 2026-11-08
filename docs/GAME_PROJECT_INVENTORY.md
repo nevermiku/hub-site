@@ -4,6 +4,11 @@
 仓库：`nevermiku/hub-site`  
 核查范围：main 分支完整文件树（746 项）、仓库 56 条提交记录，以及当前账号可访问的其他 4 个仓库。
 
+## 分项档案
+- [游戏一：刀域突围 / SWORD BREAK](./games/01-SWORD-BREAK.md)
+- [游戏二：回声 / ECHO](./games/02-ECHO.md)
+- [游戏三：街尾之章 / NEXUS（源码待恢复）](./games/03-NEXUS-RECOVERY.md)
+
 ## 结论先说
 
 目前在 GitHub 账号可访问的仓库中，**只定位到两款游戏的源码**：
