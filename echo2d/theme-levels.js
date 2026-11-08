@@ -81,7 +81,19 @@ function buildResonance(){
   solution:{mirrors:{},tuners:{}},init:{mirrors:{},tuners:{}},
   name:'双声部·共振门',story:'两道声音从不同方向抵达。只有不同频率在短暂的时间窗内相遇，门才会回应。',mechanic:'双声源 · 双频共振 · 分裂声波',themeId:7};
 }
-const levels=stages.map(build).concat(buildResonance());
+function buildSync(){
+ const n=10,cells=[
+  {type:'source',x:0,y:4,freq:0},{type:'source',x:2,y:4,freq:1},
+  {type:'sync',x:3,y:4,group:'duet-lock',pad:'A',window:1},
+  {type:'sync',x:5,y:4,group:'duet-lock',pad:'B',window:1},
+  {type:'node',x:7,y:4,id:1,freq:0},{type:'exit',x:9,y:4}
+ ];
+ return {idx:8,n,chapter:4,nodeCount:1,cells,src:{x:0,y:4,dir:1,freq:0},
+  sources:[{id:'first',x:0,y:4,dir:1,freq:0},{id:'second',x:2,y:4,dir:1,freq:1}],
+  solution:{mirrors:{},tuners:{}},init:{mirrors:{},tuners:{}},
+  name:'同刻抵达',story:'两道回声必须分别抵达不同的同步台。它们相差不能超过一拍，而且必须来自不同声源。',mechanic:'双声源 · 双点同步 · 时间窗机关',themeId:8};
+}
+const levels=stages.map(build).concat(buildResonance(),buildSync());
 function verify(level){
  const mk=Object.keys(level.solution.mirrors),tk=Object.keys(level.solution.tuners);
  const cfg={mirrors:{...level.init.mirrors},tuners:{...level.init.tuners}};
@@ -94,5 +106,5 @@ function verify(level){
  return {id:level.themeId,states,wins,solutionWins:api.simulate(level,level.solution).win,optimal:api.optimalMoves(level)};
 }
 function start(id){const level=levels.find(x=>x.themeId===id);return level?api.loadCustomLevel(level):false;}
-window.__ECHO_THEME__={version:'2.0.0',stages:stages.concat([{id:7,name:'双声部·共振门',desc:'两道不同频率的声音必须在时间窗内相遇，分裂器会把回声送往多个方向。',mechanic:'双声源 · 双频共振 · 分裂声波'}]).map(x=>({...x})),levels,verify,start};
+window.__ECHO_THEME__={version:'3.0.0',stages:stages.concat([{id:7,name:'双声部·共振门',desc:'两道不同频率的声音必须在时间窗内相遇，分裂器会把回声送往多个方向。',mechanic:'双声源 · 双频共振 · 分裂声波'},{id:8,name:'同刻抵达',desc:'两道回声必须来自不同声源，并在一拍内抵达不同的同步台。',mechanic:'双声源 · 双点同步 · 时间窗机关'}]).map(x=>({...x})),levels,verify,start};
 })();
