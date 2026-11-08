@@ -59,8 +59,7 @@ FX.impact=function(x,y,z,color,critical){
  originalImpact(x,y,z,color,critical);
  try{const tint=critical?0xffcf5d:(typeof color==='number'?color:(color&&color.getHex?color.getHex():0x9edfff));this.shock(x,y-.8,z,tint,critical?3.1:2.1,critical?.34:.25);this.particles(x,y,z,new T.Color(tint),critical?30:18,{spread:critical?4.2:2.8,up:critical?4.2:2.7,life:.48,size:critical?.22:.16});if(critical)this.burst(x,y+.25,z,new T.Color(0xffd47c),1.25,.26);}catch(e){console.warn('[impact fx]',e)}
 };
-const originalAttack=API.attack.bind(API);
-API.attack=function(...args){const result=originalAttack(...args);if(!result)return result;const p=G.player;if(p&&G.world&&p.mesh){const v=API.SAVE?.equip?.weapon?.visual||'sword',color=v==='greatsword'?0xffb85c:v==='dagger'?0xff72c8:0x8feaff;try{FX.slash(p.x,p.y,p.z,p.dir,color);FX.trail(p.x,p.y,p.z,p.dir,color,v==='greatsword'?3.8:2.8)}catch(e){}}return result};
+// 职业攻击表现由 class-combat.js 接管，避免所有职业共用同一条剑气特效。
 let prevFloor=-1,frames=0;function tick(){if(G.floor!==prevFloor){prevFloor=G.floor;owner=null;}armor();}
 function loop(){if(++frames%10===0)try{tick()}catch(e){console.warn('[character impact]',e)}requestAnimationFrame(loop)}requestAnimationFrame(loop);
 window.__SWORD_IMPACT_V3__={version:'3.0.0',refresh:armor};
