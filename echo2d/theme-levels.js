@@ -94,5 +94,5 @@ function verify(level){
  return {id:level.themeId,states,wins,solutionWins:api.simulate(level,level.solution).win,optimal:api.optimalMoves(level)};
 }
 function start(id){const level=levels.find(x=>x.themeId===id);return level?api.loadCustomLevel(level):false;}
-window.__ECHO_THEME__={version:'2.0.0',stages:stages.map(x=>({...x})),levels,verify,start};
+window.__ECHO_THEME__={version:'2.0.0',stages:stages.concat([{id:7,name:'双声部·共振门',desc:'两道不同频率的声音必须在时间窗内相遇，分裂器会把回声送往多个方向。',mechanic:'双声源 · 双频共振 · 分裂声波'}]).map(x=>({...x})),levels,verify,start};
 })();
