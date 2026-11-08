@@ -186,9 +186,13 @@
              : c.type === 'tuner' ? (cfg.tuners[keyOf(c.x, c.y, n)] ?? c.init) : 0
       };
     }
-    const sd = DIRS[level.src.dir];
-    let waves = [{ x: level.src.x, y: level.src.y, dx: sd[0], dy: sd[1], freq: level.src.freq, trail: [] }];
-    const openGates = new Set();
+    const sources = Array.isArray(level.sources) && level.sources.length ? level.sources : [level.src];
+    let waves = sources.map((src, i) => {
+      const d = DIRS[src.dir];
+      return { x: src.x, y: src.y, dx: d[0], dy: d[1], freq: src.freq || 0,
+        sourceId: src.id || i + 1, trail: [], wait: Math.max(0, src.startDelay || 0) };
+    });
+    const openGates = new Set(), openResonators = new Set(), resonanceWait = new Map();
     let nextNode = 1;
     const activated = [];
     const trace = [{ waves: waves.map(w => ({ ...w })), events: [] }];
@@ -204,8 +208,28 @@
         if (!c) { nw.push({ x: nx, y: ny, dx: w.dx, dy: w.dy, freq: w.freq, trail }); continue; }
         if (c.type === 'wall') { events.push({ t: 'block', x: nx, y: ny }); continue; }
         if (c.type === 'gate' && !openGates.has(c.id)) { events.push({ t: 'gate', x: nx, y: ny, id: c.id }); continue; }
-        if (c.type === 'node' && (c.id > nextNode)) { events.push({ t: 'locked', x: nx, y: ny, id: c.id }); continue; }
+        if (c.type === 'node' && c.id > nextNode) { events.push({ t: 'locked', x: nx, y: ny, id: c.id }); continue; }
         let dx = w.dx, dy = w.dy, freq = w.freq;
+        if (c.type === 'resonator' && !openResonators.has(c.id)) {
+          const id = c.id || 'resonator-' + nx + '-' + ny, prior = resonanceWait.get(id);
+          const window = Math.max(1, c.window || 2);
+          if (prior && prior.freq !== freq && tick - prior.tick <= window) {
+            openResonators.add(id);
+            events.push({ t: 'resonance', x: nx, y: ny, id, freq, window });
+            for (const held of prior.waves) nw.push({ ...held, x: nx, y: ny, trail: [...held.trail, { x: held.x, y: held.y }].slice(-8) });
+            nw.push({ ...w, x: nx, y: ny, trail });
+            resonanceWait.delete(id);
+            continue;
+          }
+          if (!prior || tick - prior.tick > window) resonanceWait.set(id, { freq, tick, waves: [w] });
+          else prior.waves.push(w);
+          events.push({ t: 'resonanceWait', x: nx, y: ny, id, freq, window });
+          continue;
+        }
+        if (c.type === 'node' && activated.includes(c.id)) {
+          nw.push({ ...w, x: nx, y: ny, trail });
+          continue;
+        }
         if (c.type === 'mirror') {
           const r = reflect(dx, dy, c.state); dx = r[0]; dy = r[1];
           events.push({ t: 'bounce', x: nx, y: ny, state: c.state });
@@ -215,10 +239,20 @@
           events.push({ t: 'delay', x: nx, y: ny, ticks: Math.max(1, c.ticks || 2) });
         } else if (c.type === 'decoy') {
           events.push({ t: 'decoy', x: nx, y: ny });
+        } else if (c.type === 'splitter') {
+          const branches = Array.isArray(c.branches) && c.branches.length ? c.branches : [0, 1, 2, 3];
+          events.push({ t: 'split', x: nx, y: ny, branches: branches.slice() });
+          for (const dir of branches) {
+            const d = DIRS[((dir % 4) + 4) % 4];
+            nw.push({ ...w, x: nx, y: ny, dx: d[0], dy: d[1], trail });
+          }
+          continue;
         } else if (c.type === 'node') {
           if (freq !== c.freq) { events.push({ t: 'wrong', x: nx, y: ny, id: c.id, freq }); continue; }
-          activated.push(c.id); nextNode++; openGates.add(c.id);
-          events.push({ t: 'node', x: nx, y: ny, id: c.id, freq });
+          if (!activated.includes(c.id)) {
+            activated.push(c.id); nextNode++; openGates.add(c.id);
+            events.push({ t: 'node', x: nx, y: ny, id: c.id, freq });
+          }
         } else if (c.type === 'exit') {
           if (activated.length === level.nodeCount) {
             trace.push({ waves: [], events });
@@ -661,8 +695,24 @@
           ctx.textAlign = 'center';
           ctx.fillText('下一枚', cx, py + cell - 4);
         }
+      } else if (c.type === 'resonator') {
+        const open = S.trace && S.trace.some(fr => fr.events.some(e => e.t === 'resonance' && e.id === c.id));
+        glow(open ? '#ffd070' : '#c79cff', 20);
+        ctx.fillStyle = open ? 'rgba(255,208,112,.18)' : 'rgba(199,156,255,.16)';
+        ctx.beginPath(); ctx.arc(cx, cy, cell * .29, 0, Math.PI * 2); ctx.fill(); noGlow();
+        ctx.strokeStyle = open ? '#ffd070' : '#c79cff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, cell * .29, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#f2e6ff'; ctx.font = '700 ' + Math.max(9, cell * .19) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText('双频', cx, cy + cell * .06);
+      } else if (c.type === 'splitter') {
+        glow('#7fe0a0', 16);
+        ctx.fillStyle = 'rgba(127,224,160,.16)';
+        ctx.beginPath(); ctx.moveTo(cx, py + 5); ctx.lineTo(px + cell - 5, cy); ctx.lineTo(cx, py + cell - 5); ctx.lineTo(px + 5, cy); ctx.closePath(); ctx.fill(); noGlow();
+        ctx.strokeStyle = '#7fe0a0'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#d8ffe5'; ctx.font = '700 ' + Math.max(9, cell * .2) + 'px sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText('分', cx, cy + cell * .07);
       } else if (c.type === 'source') {
-        glow('#8cd8ff', 18);
+        glow(c.freq === 1 ? '#ffb26b' : '#8cd8ff', 18);
         ctx.fillStyle = 'rgba(140,216,255,.20)';
         rr(px + 3, py + 3, cell - 6, cell - 6, 9); ctx.fill(); noGlow();
         ctx.fillStyle = '#8cd8ff';
@@ -670,7 +720,7 @@
         ctx.lineTo(cx - cell * .16, cy - cell * .20); ctx.lineTo(cx - cell * .16, cy + cell * .20);
         ctx.closePath(); ctx.fill();
         ctx.fillStyle = 'rgba(180,225,255,.8)'; ctx.font = Math.max(8, cell * .14) + 'px sans-serif';
-        ctx.textAlign = 'center'; ctx.fillText('声源', cx, py + cell - 4);
+        ctx.textAlign = 'center'; ctx.fillText(c.freq === 1 ? '橙声源' : '青声源', cx, py + cell - 4);
       } else if (c.type === 'exit') {
         const ready = S.activated.length === L.nodeCount;
         if (ready) glow('#ffd070', 22);
@@ -912,6 +962,9 @@
       } else if (e.t === 'bounce') { addFx(e.x, e.y, 'rgba(140,216,255,ALPHA)'); AU.bounce(); }
       else if (e.t === 'tune') { addFx(e.x, e.y, FREQ[e.freq].dim + 'ALPHA)'); AU.tune(); }
       else if (e.t === 'delay') { addFx(e.x, e.y, 'rgba(183,156,255,ALPHA)'); AU.tone(330, 0, .22, 'sine', .07, 220); }
+      else if (e.t === 'resonanceWait') { addFx(e.x, e.y, 'rgba(199,156,255,ALPHA)'); AU.tone(260 + e.freq * 90, 0, .18, 'sine', .05, 420); }
+      else if (e.t === 'resonance') { addFx(e.x, e.y, 'rgba(255,208,112,ALPHA)'); addParts(e.x, e.y, '#ffd070', 22); AU.tone(660, 0, .34, 'sine', .1, 990); }
+      else if (e.t === 'split') { addFx(e.x, e.y, 'rgba(127,224,160,ALPHA)'); AU.tone(520, 0, .2, 'triangle', .06, 780); }
       else if (e.t === 'decoy') { addFx(e.x, e.y, 'rgba(255,150,170,ALPHA)'); }
       else if (e.t === 'gate') { addFx(e.x, e.y, 'rgba(255,122,138,ALPHA)'); AU.gate(); }
       else if (e.t === 'block' || e.t === 'wrong' || e.t === 'locked') {
