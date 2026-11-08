@@ -38,6 +38,10 @@ function build(spec){
   const candidates=straight.filter(i=>i>lower&&i<target&&!occupied.has(i)&&!tunerIdx.includes(i));
   if(candidates.length)tunerIdx.push(candidates[Math.floor((candidates.length-1)/2)]);
  }
+ if(tunerIdx.length<spec.tuners){
+  const beforeFirst=path.map((p,i)=>i).filter(i=>i<nodeIdx[0]&&!turnSet.has(i)&&!occupied.has(i)&&!tunerIdx.includes(i));
+  while(tunerIdx.length<spec.tuners&&beforeFirst.length)tunerIdx.push(beforeFirst.shift());
+ }
  const gateIdx=[];
  for(let q=0;q<nodeIdx.length-1;q++){let g=nodeIdx[q]+1;while(g<nodeIdx[q+1]&&(occupied.has(g)||gateIdx.includes(g)||tunerIdx.includes(g)))g++;if(g<nodeIdx[q+1])gateIdx.push(g);}
 
