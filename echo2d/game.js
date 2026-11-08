@@ -940,6 +940,22 @@
     closeScreens();
     if (!endless && S.lv % 6 === 1) showStory('记忆碎片 · ' + CHAP[S.level.chapter], S.level.story);
   }
+  function loadCustomLevel(level) {
+    if (!level || !Array.isArray(level.cells) || !level.src) return false;
+    S.mode = 'theme'; S.lv = Math.max(1, level.idx || 1); S.level = level;
+    S.cfg = { mirrors: { ...level.init.mirrors }, tuners: { ...level.init.tuners } };
+    S.history = []; S.moves = 0; S.playing = false; S.trace = null; S.tick = 0;
+    S.activated = []; S.won = false; S.fx = []; S.parts = []; S.beat = 0; S.hintKey = -1;
+    S.melody = []; S.song = null; S.songPlaying = false; S.hintsLeft = 3; stopSong();
+    layout();
+    $('lvNum').textContent = '主题 · 第 ' + S.lv + ' 关';
+    $('chapName').textContent = '时空错位 · 主题关卡';
+    $('lvName').textContent = level.name + ' · ' + level.nodeCount + ' 段记忆';
+    const songEl = $('lvSong');
+    if (songEl) songEl.textContent = '♪ 主题关卡 · ' + (level.mechanic || '镜面与频率');
+    $('moves').textContent = '0'; buildNodeRow(); closeScreens();
+    return true;
+  }
   function startEndless(depth) { loadLevel(Math.max(1, depth || S.endless.best || 1), { endless: true }); }
   function closeScreens() {
     ['title', 'levels', 'help', 'win', 'story'].forEach(id => $(id).classList.add('hidden'));
@@ -1135,6 +1151,9 @@
         persistEndless();
         head = '无尽 · 第 ' + S.lv + ' 层';
         bestTxt = isBest ? ' · 本层新纪录！' : ' · 本层最佳 ' + S.endless.bestSteps[S.lv] + ' 步';
+      } else if (S.mode === 'theme') {
+        head = '主题 · ' + S.level.name;
+        bestTxt = ' · 主题挑战已完成';
       } else {
         const prev = S.save.best[S.lv];
         const isBest = prev === undefined || S.moves < prev;
@@ -1267,7 +1286,8 @@
   $('helpClose').onclick = () => $('help').classList.add('hidden');
   $('btnNext').onclick = () => {
     stopSong();
-    if (S.mode === 'endless') startEndless(S.lv + 1);
+    if (S.mode === 'theme') { if (typeof window.__ECHO_THEME_NEXT__ === 'function') window.__ECHO_THEME_NEXT__(); else $('win').classList.add('hidden'); }
+    else if (S.mode === 'endless') startEndless(S.lv + 1);
     else S.lv >= TOTAL ? openLevels() : loadLevel(S.lv + 1);
   };
   $('btnWinLevels').onclick = () => { stopSong(); openLevels(); };
@@ -1290,7 +1310,7 @@
     });
   }
   // 供自动化验收
-  window.__ECHO2D__ = { S, genLevel, simulate, loadLevel, play, AU, finishPlay,
+  window.__ECHO2D__ = { S, genLevel, simulate, loadLevel, loadCustomLevel, play, AU, finishPlay,
     buildSong, playSong, stopSong, lyricsFor, optimalMoves, LYRICS, SCALE,
     SONGBOOK, songForLevel, tierOf, MODES, MODE_N, MODE_TIER, songComplexity,
     openJuke, playJuke, renderJuke, unlockedTier, lvOfSong, stopJuke,
