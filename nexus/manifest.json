@@ -1,0 +1,13 @@
+{
+  "name": "街尾之章 NEXUS",
+  "short_name": "NEXUS",
+  "description": "三章悬疑推理：逻辑方阵、唯一真话与凯撒密码。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1017",
+  "theme_color": "#10131b",
+  "lang": "zh-CN",
+  "categories": ["games", "puzzle", "entertainment"]
+}

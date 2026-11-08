@@ -1,5 +1,5 @@
 /* 回声 ECHO 3D · Service Worker */
-const V = 'echo3d-v3-0-0';
+const V = 'echo3d-v3-0-1';
 const CORE = ['./', './index.html', './game.js', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));

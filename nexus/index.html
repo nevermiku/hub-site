@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131b">
+<meta name="description" content="街尾之章 NEXUS：三章悬疑推理，寻找被街道抹去的第四个名字。">
+<link rel="manifest" href="./manifest.json">
+<title>街尾之章 · NEXUS</title>
+<style>
+:root{--bg:#0d1017;--panel:#171c26;--panel2:#202735;--line:#394353;--text:#e9e5dc;--muted:#9aa5b3;--gold:#d7b77a;--blue:#8bb7c8;--red:#b96d6d;--ok:#8eae91}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#28313b 0,#111720 42%,#090c12 100%);color:var(--text);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+body{min-height:100svh}button,input{font:inherit}button{cursor:pointer;color:inherit}
+.wrap{width:min(1040px,100%);margin:auto;padding:20px 18px 48px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #ffffff16;padding:8px 0 16px}
+.brand{display:flex;align-items:center;gap:12px}.sigil{width:42px;height:42px;border:1px solid var(--gold);display:grid;place-items:center;color:var(--gold);font-family:serif;font-size:22px;transform:rotate(45deg);border-radius:8px}.sigil span{transform:rotate(-45deg)}
+.brand h1{font-size:17px;letter-spacing:4px;margin:0;font-weight:650}.brand small{display:block;color:var(--muted);letter-spacing:3px;font-size:9px;margin-top:3px}
+.top-actions{display:flex;gap:8px}.ghost,.btn{border:1px solid var(--line);background:#ffffff08;border-radius:10px;padding:9px 13px;font-size:12px}.ghost:hover,.btn:hover{border-color:var(--gold)}
+.hero{padding:clamp(28px,7vw,76px) 0 36px;max-width:760px}.eyebrow{color:var(--gold);letter-spacing:5px;font-size:10px}.hero h2{font-family:serif;font-size:clamp(34px,8vw,68px);font-weight:500;letter-spacing:5px;line-height:1.15;margin:15px 0}.hero p{max-width:620px;color:#b7c0ca;line-height:2;font-size:14px}.hero .lead{color:var(--text);font-size:16px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.primary{background:linear-gradient(120deg,#d8bd89,#9e8055);border:0;color:#17130d;font-weight:750;padding:12px 23px;border-radius:10px}.secondary{background:#ffffff08;border:1px solid var(--line);padding:11px 18px;border-radius:10px}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;margin-top:20px}.side,.main{background:linear-gradient(160deg,#1a202b,#121720);border:1px solid #ffffff16;border-radius:16px;overflow:hidden}.side{padding:16px;height:max-content}.side h3{font-size:11px;letter-spacing:3px;color:var(--muted);font-weight:500;margin:0 0 12px}.chapter{width:100%;text-align:left;display:flex;align-items:center;gap:12px;border:1px solid transparent;background:transparent;padding:12px 10px;border-radius:10px;margin:4px 0}.chapter.active{background:#d7b77a12;border-color:#d7b77a55}.chapter:disabled{opacity:.38;cursor:not-allowed}.chapter .num{font-family:serif;color:var(--gold);font-size:20px}.chapter b{display:block;font-size:12px;font-weight:650}.chapter small{color:var(--muted);font-size:10px}.progress{height:4px;background:#ffffff12;border-radius:4px;margin:15px 0 7px;overflow:hidden}.progress i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}.side-foot{font-size:10px;color:var(--muted);line-height:1.8}
+.main{padding:clamp(18px,4vw,34px);min-height:480px}.chapter-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #ffffff14;padding-bottom:18px;margin-bottom:20px}.chapter-head .kicker{color:var(--gold);font-size:10px;letter-spacing:4px}.chapter-head h2{font-family:serif;font-size:clamp(23px,5vw,34px);font-weight:500;letter-spacing:2px;margin:8px 0}.chapter-head p{color:var(--muted);font-size:12px;margin:0}.tag{border:1px solid #d7b77a55;color:var(--gold);border-radius:20px;padding:6px 10px;font-size:10px;white-space:nowrap}
+.story{color:#c6ced7;line-height:2.05;font-size:13px;white-space:pre-line;margin:0 0 22px}.story em{color:var(--gold);font-style:normal}
+.panel{background:#090e16a8;border:1px solid #ffffff16;border-radius:13px;padding:18px;margin:16px 0}.panel h3{font-size:13px;letter-spacing:2px;margin:0 0 12px;color:var(--gold)}.panel p{font-size:12px;line-height:1.9;color:#b9c3cf}
+.clues{display:grid;gap:8px}.clue{display:flex;gap:10px;padding:10px 12px;background:#ffffff06;border-radius:8px;font-size:12px;line-height:1.7}.clue span{color:var(--gold);font-family:serif}
+.answer-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}.choice{border:1px solid var(--line);background:#ffffff08;padding:10px 14px;border-radius:9px;font-size:12px}.choice.selected{border-color:var(--gold);background:#d7b77a20;color:#f3d9a6}.choice.correct{border-color:var(--ok);background:#8eae9118}.choice.wrong{border-color:var(--red)}
+.feedback{min-height:24px;color:var(--muted);font-size:12px;margin-top:12px;line-height:1.7}.feedback.good{color:var(--ok)}.feedback.bad{color:#d58c8c}
+.cipher{font-family:ui-monospace,monospace;font-size:clamp(17px,4vw,25px);letter-spacing:3px;color:#f1d49d;background:#070b11;border:1px dashed #a58b5d;padding:18px 12px;text-align:center;border-radius:10px;overflow-wrap:anywhere}
+input[type=text]{width:100%;max-width:520px;background:#0a0f17;border:1px solid var(--line);border-radius:9px;padding:12px;color:var(--text);outline:none}input:focus{border-color:var(--gold)}
+.memory{display:flex;flex-wrap:wrap;gap:8px}.memory span{border:1px solid #8bb7c855;background:#8bb7c811;color:#b6d2dc;border-radius:7px;padding:7px 10px;font-size:11px}
+.footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px;padding-top:14px;border-top:1px solid #ffffff14;color:var(--muted);font-size:10px}
+.hidden{display:none!important}.ending{text-align:center;padding:30px 12px}.ending h2{font-family:serif;font-size:34px;font-weight:500;color:var(--gold)}.ending p{line-height:2;color:#c4ccd5;font-size:13px;max-width:600px;margin:15px auto}
+@media(max-width:760px){.wrap{padding:12px 12px 34px}.layout{grid-template-columns:1fr}.side{padding:12px}.chapters{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.chapter{padding:9px 6px;gap:6px}.chapter .num{font-size:17px}.chapter b{font-size:10px}.chapter small{font-size:9px}.side h3,.side-foot{display:none}.progress{margin:9px 0 3px}.main{min-height:420px}.top{align-items:flex-start}.brand h1{font-size:14px}.ghost{padding:8px}.hero{padding:34px 0 22px}.footer{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div class="brand"><div class="sigil"><span>街</span></div><div><h1>街尾之章</h1><small>N E X U S · CASE FILE 001</small></div></div>
+ <div class="top-actions"><button class="ghost" id="soundBtn" type="button">♫ 音效：关</button><button class="ghost" id="resetBtn" type="button">重置进度</button></div>
+</header>
+<section class="hero" id="intro">
+ <div class="eyebrow">THE LAST STREET · 三章悬疑推理</div>
+ <h2>有些街道，<br>不该被记起。</h2>
+ <p class="lead">凌晨 23:17，你收到一封没有寄件人的信。</p>
+ <p>信里只有一句话：<em>“如果你还记得街尾，就在钟声响起前回来。”</em><br>七年前，整条旧街在一夜之间从地图上消失。所有人都说那里从未存在，只有你记得街灯、旧钟，以及一个被所有人遗忘的名字。</p>
+ <div class="actions"><button class="primary" id="startBtn" type="button">开始调查</button><button class="secondary" id="continueBtn" type="button">继续上次进度</button></div>
+</section>
+<div class="layout hidden" id="game">
+ <aside class="side">
+  <h3>CASE PROGRESS / 案件进度</h3>
+  <div class="chapters">
+   <button class="chapter active" data-ch="0"><span class="num">Ⅰ</span><span><b>空街来客</b><small>四人 · 四时</small></span></button>
+   <button class="chapter" data-ch="1" disabled><span class="num">Ⅱ</span><span><b>唯一证词</b><small>真假 · 证词</small></span></button>
+   <button class="chapter" data-ch="2" disabled><span class="num">Ⅲ</span><span><b>钟下密信</b><small>凯撒 · 破译</small></span></button>
+  </div>
+  <div class="progress"><i id="progressBar"></i></div>
+  <div class="side-foot" id="progressText">已解开 0 / 3 章。线索会自动写入档案。</div>
+  <div style="height:18px"></div><h3>MEMORY FRAGMENTS / 记忆碎片</h3>
+  <div class="memory" id="memoryList"><span>尚无记忆</span></div>
+ </aside>
+ <main class="main" id="mainPanel"></main>
+</div>
+</div>
+<script>
+(()=> {
+'use strict';
+const KEY='nexus-casefile-v1';
+const chapters=[
+ {title:'空街来客',sub:'第一章 · 四人四时',tag:'逻辑方阵',story:'旧街入口被封条围住。岗亭里的值班记录显示，昨夜有四个人先后经过钟楼。\n\n监控坏在 23:17，记录只留下四个时间。你必须根据证词还原顺序，找出最后一个经过钟楼的人。\n\n桌角压着一张纸条：<em>“时间不会说谎，记错时间的人才会。”</em>',clues:['周闻是第一个经过钟楼的人，时间为 22:10。','林栖既不是第一个，也不是最后一个。','陈渡经过钟楼的时间，紧接在苏禾之后。','苏禾不是 22:40 经过钟楼。'],memory:'旧钟停在 23:17',question:'谁在 23:40 经过钟楼？',options:['林栖','陈渡','苏禾','周闻'],answer:'陈渡',hint:'先确定周闻在 22:10。林栖不能在首位或末位；苏禾不能在 22:40，且陈渡紧跟苏禾之后。',success:'你把四张记录按时间排好。最后一行的签名是“陈渡”。奇怪的是，档案照片里这个人没有脸。'},
+ {title:'唯一证词',sub:'第二章 · 只有一句真话',tag:'真假推理',story:'岗亭后面有一间储物室。门锁没有被撬过，桌上却少了一把黄铜钥匙。\n\n四个人留下了四句证词。档案注明：<em>四人之中，只有一个人说了真话。</em>\n\n你需要判断钥匙究竟被藏在哪里。',clues:['林栖：钥匙在红柜里。','陈渡：钥匙不在红柜里。','苏禾：钥匙在蓝柜里。','周闻：钥匙在墙后。'],memory:'黄铜钥匙的齿纹',question:'钥匙被藏在哪里？',options:['红柜','蓝柜','木盒','墙后'],answer:'木盒',hint:'假设钥匙在红柜，那么林栖和陈渡会同时说真话，违反“只有一句真话”。再检查其余选项。',success:'你打开桌下的木盒，里面只有钥匙和一张旧合影。照片背面写着：第四个人从来没有离开。'},
+ {title:'钟下密信',sub:'第三章 · 凯撒密码',tag:'密文破译',story:'钟楼内部没有指针，只有一面被拆开的铜钟。钟座背面刻着一串字母。\n\n你在旧档案里找到提示：<em>“字母向前走了三步，把它们带回来。”</em>\n\n这是一条凯撒密码。将每个字母向前还原三位，读出完整句子。',clues:['密文采用标准英文字母表循环。','加密时每个字母向后移动了 3 位；解密时向前还原 3 位。','空格和标点不需要改变。'],memory:'被抹去的第四个名字',cipher:'WKH NHB LV XQGHU WKH FORFN',memory2:'钟下的暗格',question:'请输入破译后的英文句子：',answer:'THE KEY IS UNDER THE CLOCK',hint:'例如密文中的 WKH，每个字母向前还原三位：W→T、K→H、H→E。',success:'铜钟底座弹开。暗格里没有钥匙，只有一页被撕去名字的户籍簿。最后一栏写着：街道住户共四人。'}
+];
+let state={solved:[],memory:[],sound:false};
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'{}');state={...state,...x};if(!Array.isArray(state.solved))state.solved=[];if(!Array.isArray(state.memory))state.memory=[];}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+const $=id=>document.getElementById(id);
+let current=0,selected='';
+function updateProgress(){const n=state.solved.length;$('progressBar').style.width=(n/3*100)+'%';$('progressText').textContent='已解开 '+n+' / 3 章。线索会自动写入档案。';$('memoryList').innerHTML=state.memory.length?state.memory.map(x=>'<span>'+x+'</span>').join(''):'<span>尚无记忆</span>';document.querySelectorAll('.chapter').forEach((b,i)=>{b.disabled=i>n&&!state.solved.includes(i);b.classList.toggle('active',i===current);});}
+function showGame(){ $('intro').classList.add('hidden');$('game').classList.remove('hidden');updateProgress();render();}
+function render(){
+ const c=chapters[current],done=state.solved.includes(current);
+ const main=$('mainPanel');
+ if(state.solved.length===3){main.innerHTML='<div class="ending"><div class="eyebrow">CASE CLOSED? / 档案未结</div><h2>街尾，从未消失。</h2><p>户籍簿上的第四个名字，正是你的名字。七年前，你并不是街道的幸存者，而是唯一被送出街尾的人。</p><p>旧钟再次响起。街灯一盏接一盏亮起，街道尽头站着一个与你一模一样的人。</p><p style="color:var(--gold)">“欢迎回来。这一次，轮到你留下了。”</p><button class="primary" id="againBtn">重新调查</button></div>'; $('againBtn').onclick=reset;return;}
+ let html='<div class="chapter-head"><div><div class="kicker">CHAPTER 0'+(current+1)+' / NEXUS</div><h2>'+c.title+'</h2><p>'+c.sub+'</p></div><span class="tag">'+c.tag+'</span></div>';
+ html+='<p class="story">'+c.story+'</p><section class="panel"><h3>现场线索 / EVIDENCE</h3><div class="clues">'+c.clues.map((x,i)=>'<div class="clue"><span>0'+(i+1)+'</span><div>'+x+'</div></div>').join('')+'</div></section>';
+ if(current===2){html+='<section class="panel"><h3>截获密文 / ENCRYPTED MESSAGE</h3><div class="cipher">'+c.cipher+'</div><p>解密规则：每个字母向前还原三位（D→A），空格保持不变。</p><input id="answerInput" type="text" autocomplete="off" autocapitalize="characters" placeholder="输入解密结果，例如 THE KEY ..." value=""></section>';}
+ else {html+='<section class="panel"><h3>推理结论 / YOUR DEDUCTION</h3><p>'+c.question+'</p><div class="answer-row">'+c.options.map(x=>'<button class="choice" data-answer="'+x+'">'+x+'</button>').join('')+'</div></section>';}
+ html+='<div class="answer-row"><button class="primary" id="checkBtn">'+(done?'查看本章记录':'提交推理')+'</button><button class="secondary" id="hintBtn">查看提示</button></div><div class="feedback" id="feedback">'+(done?'本章已完成。你可以回看线索，或继续下一章。':'所有推理都可以重新检查；答错不会扣除进度。')+'</div>';
+ html+='<div class="footer"><span>自动保存于本设备 · '+(state.solved.length)+'/3 章完成</span><span>NEXUS CASE FILE · 001</span></div>';
+ main.innerHTML=html;
+ main.querySelectorAll('[data-answer]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.answer;main.querySelectorAll('[data-answer]').forEach(x=>x.classList.toggle('selected',x===b));}));
+ $('hintBtn').onclick=()=>{$('feedback').textContent='提示：'+c.hint;$('feedback').className='feedback';};
+ $('checkBtn').onclick=()=>check();
+ if(done){
+   $('feedback').textContent='本章已完成。'+c.success;
+   $('feedback').className='feedback good';
+   $('checkBtn').textContent=current<2?'进入下一章':'查看结局';
+   $('checkBtn').onclick=()=>{if(current<2){current++;selected='';render();}else{render();}};
+ }
+}
+function check(){
+ const c=chapters[current];let val=current===2?($('answerInput').value||'').trim().replace(/[’']/g,"'").replace(/s+/g,' ').toUpperCase():selected;
+ const ok=val===c.answer;
+ const f=$('feedback');
+ if(!ok){f.textContent='推理还没有闭合。再对照每条证词检查一次；可以使用提示。';f.className='feedback bad';return;}
+ if(!state.solved.includes(current)){state.solved.push(current);state.solved.sort();if(c.memory&&!state.memory.includes(c.memory))state.memory.push(c.memory);if(c.memory2&&!state.memory.includes(c.memory2))state.memory.push(c.memory2);save();}
+ f.textContent='推理成立。'+c.success;f.className='feedback good';updateProgress();
+ const btn=$('checkBtn');btn.textContent='进入下一章';btn.onclick=()=>{current=Math.min(2,current+1);selected='';render();};
+}
+function reset(){if(!confirm('确定清空本设备上的 NEXUS 调查进度吗？'))return;state={solved:[],memory:[],sound:false};save();current=0;selected='';$('soundBtn').textContent='♫ 音效：关';showGame();}
+function start(){load();current=0;showGame();}
+load();
+$('startBtn').onclick=start;
+$('continueBtn').onclick=()=>{load();current=Math.min(2,state.solved.length);showGame();};
+$('resetBtn').onclick=()=>{if(!$('game').classList.contains('hidden'))reset();else{if(confirm('确定清空本设备上的 NEXUS 调查进度吗？')){state={solved:[],memory:[],sound:false};save();}}};
+$('soundBtn').onclick=()=>{state.sound=!state.sound;$('soundBtn').textContent='♫ 音效：'+(state.sound?'开':'关');save();if(state.sound){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=440;g.gain.value=.025;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.12);}catch(e){}}};
+document.querySelectorAll('.chapter').forEach(b=>b.addEventListener('click',()=>{const i=Number(b.dataset.ch);if(i<=state.solved.length||state.solved.includes(i)){current=i;selected='';render();}}));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+})();
+</script>
+</body>
+</html>
