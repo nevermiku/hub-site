@@ -2,20 +2,20 @@
 const API=window.__AINCRAD3D__,T=API&&API.THREE,G=API&&API.G;
 if(!API||!T||!G)return;
 const mat=(color,metalness=.78,roughness=.27,emissive=0)=>new T.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:.42});
-const M={gold:mat(0xd9b36d,.88,.22,0x39220b),silver:mat(0xa8c2d8,.9,.2,0x1a3448),dark:mat(0x17283b,.72,.32),cyan:mat(0x55dfff,.55,.2,0x168dbb),leather:mat(0x382b2b,.22,.72)};
+const M={gold:mat(0xd9b36d,.88,.22,0x39220b),silver:mat(0xa8c2d8,.9,.2,0x1a3448),dark:mat(0x17283b,.72,.32),cyan:mat(0x55dfff,.55,.2,0x168dbb),leather:mat(0x382b2b,.22,.72),blade:mat(0xd9e7f2,.96,.16,0x243e58),edge:mat(0x8ee8ff,.9,.18,0x176c8c)};
 const geo={sphere:new T.SphereGeometry(1,20,14),box:new T.BoxGeometry(1,1,1),cone:new T.ConeGeometry(1,1,8),torus:new T.TorusGeometry(1,.08,8,28)};
 let lastPlayer=null,lastClass=null,lastFloor=-1,decor=null,bladeOwner=null;
 function mesh(parent,g,m,p,s,r){const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
 function plate(parent,p,s,rot){return mesh(parent,geo.box,M.silver,p,s,rot);}
 function syncDualOffhand(p,cls){
  const host=p.userData&&p.userData.arms&&p.userData.arms.L&&p.userData.arms.L.el;
- if(!host)return;
+ if(!host)return false;
  const old=host.userData.__dualOffhand;
  if(old){host.remove(old);delete host.userData.__dualOffhand;}
- if(cls!=='dual')return;
+ if(cls!=='dual')return true;
  const hand=new T.Group();hand.name='dual-offhand-blade';
  hand.position.set(0,-.34,.1);hand.rotation.set(-.22,0,-.3);host.add(hand);
- const steel=mat(0xd9e7f2,.96,.16,0x243e58),edge=mat(0x8ee8ff,.9,.18,0x176c8c),gold=M.gold;
+ const steel=M.blade,edge=M.edge,gold=M.gold;
  mesh(hand,geo.box,M.dark,[0,-.12,0],[.055,.27,.055]);
  mesh(hand,geo.box,gold,[0,-.27,0],[.09,.055,.08]);
  mesh(hand,geo.box,gold,[0,.015,0],[.24,.045,.075]);
@@ -24,12 +24,16 @@ function syncDualOffhand(p,cls){
  mesh(hand,geo.box,edge,[.044,.36,.016],[.012,.58,.008]);
  mesh(hand,geo.cone,steel,[0,.73,0],[.055,.13,.025]);
  host.userData.__dualOffhand=hand;
+ return true;
 }
 function upgradeCharacter(){
  const p=G.player&&G.player.mesh;if(!p)return;
  const cls=API.SAVE&&API.SAVE.cls||'swordsman',newPlayer=p!==lastPlayer;
- if(!newPlayer&&cls===lastClass)return;
- if(!newPlayer){syncDualOffhand(p,cls);lastClass=cls;return;}
+ if(!newPlayer&&cls===lastClass){
+  if(cls==='dual'&&!(p.userData&&p.userData.arms&&p.userData.arms.L&&p.userData.arms.L.el&&p.userData.arms.L.el.userData.__dualOffhand))syncDualOffhand(p,cls);
+  return;
+ }
+ if(!newPlayer){if(syncDualOffhand(p,cls)!==false)lastClass=cls;return;}
  lastPlayer=p;lastClass=cls;
  const d=p.userData||{},torso=d.torso,head=d.head,arms=d.arms||{},legs=d.legs||{};
  if(torso){
