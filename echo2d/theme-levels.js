@@ -3,10 +3,10 @@ const api=window.__ECHO2D__;
 const stages=[
  {id:1,name:'第一声折光',desc:'单目标与基础镜面：听见第一声回响。',mechanic:'单目标 · 镜面折射',startY:1,segs:[[1,4],[2,3],[1,4]],nodes:2,tuners:0},
  {id:2,name:'双门之间',desc:'三枚记忆依次点亮，门会锁住错误的顺序。',mechanic:'三节点 · 连锁门',startY:1,segs:[[1,3],[2,3],[1,3],[0,2],[1,2]],nodes:3,tuners:1},
- {id:3,name:'迟到半拍',desc:'调频器改变回声颜色，节点只接受正确频率。',mechanic:'频率切换 · 三色记忆',startY:1,segs:[[1,4],[2,2],[1,3],[2,3],[1,1]],nodes:3,tuners:1},
- {id:4,name:'镜中双生',desc:'多面镜与两次调频交错，必须按路线逐段校准。',mechanic:'多镜联动 · 双调频',startY:2,segs:[[1,3],[0,1],[1,3],[2,3],[1,2]],nodes:4,tuners:2},
- {id:5,name:'潮汐回返',desc:'路线折返，频率变化藏在节点之间。',mechanic:'折返路径 · 多频率',startY:1,segs:[[1,2],[2,4],[1,3],[0,3],[1,3],[2,1]],nodes:4,tuners:2},
- {id:6,name:'时空错位',desc:'五枚记忆、三次调频与连续折射构成最终闭环。',mechanic:'综合试炼 · 五节点',startY:2,segs:[[1,4],[2,4],[1,3],[0,2],[1,2],[2,1]],nodes:5,tuners:3}
+ {id:3,name:'迟到半拍',desc:'调频器改变回声颜色；延迟阵列会让回声停留，必须把握抵达顺序。',mechanic:'频率切换 · 延迟回声',startY:1,segs:[[1,4],[2,2],[1,3],[2,3],[1,1]],nodes:3,tuners:1,delays:1,decoys:1},
+ {id:4,name:'镜中双生',desc:'多面镜与多频调谐交错，虚假的记忆标记会诱导你偏离路线。',mechanic:'多镜联动 · 真假线索',startY:2,segs:[[1,3],[0,1],[1,3],[2,3],[1,2]],nodes:4,tuners:2,delays:1,decoys:2},
+ {id:5,name:'潮汐回返',desc:'折返路线穿过两处延迟阵列，频率必须在正确节点前完成切换。',mechanic:'折返路径 · 双频校准',startY:1,segs:[[1,2],[2,4],[1,3],[0,3],[1,3],[2,1]],nodes:4,tuners:2,delays:2,decoys:2},
+ {id:6,name:'时空错位',desc:'五枚记忆、延迟回声、三次调频与真假线索构成最终闭环。',mechanic:'综合试炼 · 延迟与多频',startY:2,segs:[[1,4],[2,4],[1,3],[0,2],[1,2],[2,1]],nodes:5,tuners:3,delays:2,decoys:3}
 ];
 const key=(x,y,n)=>y*n+x,dirs=[[0,-1],[1,0],[0,1],[-1,0]];
 const reflect=(dx,dy,s)=>s===0?[-dy,-dx]:[dy,dx];
@@ -51,7 +51,17 @@ function build(spec){
  for(const t of turns){const p=path[t.index];cells.push({type:'mirror',x:p.x,y:p.y,init:init.mirrors[key(p.x,p.y,n)]});}
  gateIdx.forEach((i,q)=>{const p=path[i];cells.push({type:'gate',x:p.x,y:p.y,id:q+1});});
  tunerIdx.forEach(i=>{const p=path[i],k=key(p.x,p.y,n);cells.push({type:'tuner',x:p.x,y:p.y,init:init.tuners[k]});});
+ const delayIdx=[];
+ const delayCandidates=straight.filter(i=>!occupied.has(i)&&!gateIdx.includes(i)&&!tunerIdx.includes(i));
+ for(let q=0;q<(spec.delays||0)&&delayCandidates.length;q++){
+  const pickAt=Math.min(delayCandidates.length-1,Math.floor((q+1)*delayCandidates.length/((spec.delays||0)+1)));
+  delayIdx.push(delayCandidates.splice(pickAt,1)[0]);
+ }
+ delayIdx.forEach((i,q)=>{const p=path[i];cells.push({type:'delay',x:p.x,y:p.y,ticks:q%2?3:2});});
  nodeIdx.forEach((i,q)=>{const p=path[i];cells.push({type:'node',x:p.x,y:p.y,id:q+1,freq:nodeFreq[i]});});
+ const decoyCandidates=[];
+ for(const p of path){for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){const xx=p.x+dx,yy=p.y+dy,k=key(xx,yy,n);if(xx>0&&yy>=0&&yy<n&&xx<n&&!used.has(k)&&!decoyCandidates.some(d=>d.x===xx&&d.y===yy))decoyCandidates.push({x:xx,y:yy});}}
+ for(let q=0;q<(spec.decoys||0)&&decoyCandidates.length;q++){const p=decoyCandidates[(q*3+1)%decoyCandidates.length];cells.push({type:'decoy',x:p.x,y:p.y});}
  cells.push({type:'source',x:0,y:spec.startY},{type:'exit',x:path[path.length-1].x,y:path[path.length-1].y});
  return {idx:spec.id,n,chapter:4,nodeCount:spec.nodes,cells,path,solution,init,src:{x:0,y:spec.startY,dir:1,freq:0},name:spec.name,story:spec.desc,mechanic:spec.mechanic,themeId:spec.id};
 }
