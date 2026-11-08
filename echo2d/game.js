@@ -211,6 +211,10 @@
         if (c.type === 'gate' && !openGates.has(c.id)) { events.push({ t: 'gate', x: nx, y: ny, id: c.id }); continue; }
         if (c.type === 'node' && c.id > nextNode) { events.push({ t: 'locked', x: nx, y: ny, id: c.id }); continue; }
         let dx = w.dx, dy = w.dy, freq = w.freq;
+        if (c.type === 'sync' && c.source && c.source !== w.sourceId) {
+          nw.push({ ...w, x: nx, y: ny, trail });
+          continue;
+        }
         if (c.type === 'sync' && !openSync.has(c.group)) {
           const group = c.group || 'sync-' + nx + '-' + ny;
           const prior = syncWait.get(group), window = Math.max(1, c.window || 1);
