@@ -5,9 +5,9 @@ const palette={swordsman:0x8fdcff,dual:0xff8fc8,lancer:0x8be7ff,knight:0xffd889,
 const originalSlash=FX.slash.bind(FX);
 let lastEffect=0;
 FX.slash=function(x,y,z,dir,color){
- const result=originalSlash(x,y,z,dir,color);
- const p=G.player;if(!p||p.action!=='attack')return result;
+ const p=G.player;if(!p||p.action!=='attack')return originalSlash(x,y,z,dir,color);
  const id=API.SAVE&&API.SAVE.cls||'swordsman',c=palette[id]||0x8fdcff;
+ const blade=['swordsman','dual','katana','rogue'].includes(id),result=blade?originalSlash(x,y,z,dir,color):undefined;
  const now=performance.now();if(now-lastEffect<95)return result;lastEffect=now;
  try{
   if(id==='dual'){originalSlash(x,y+.12,z,dir+.36,0xffb6dc);FX.trail(x,y,z,dir,c,3.3);}
