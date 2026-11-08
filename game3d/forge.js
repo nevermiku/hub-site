@@ -8,7 +8,34 @@ const styles=[
 {id:'sword',label:'守誓长剑',visual:'sword',atk:1.12,crit:.02,speed:0,desc:'均衡配装 · 稳定输出'},
 {id:'dagger',label:'影袭短刃',visual:'dagger',atk:1.02,crit:.065,speed:.07,desc:'短刃连击 · 高暴击高攻速'}
 ];
-let selected='sword';
+let selected='sword',lastWeaponUid='';
+function decorateBlade(){
+ const player=api.G.player,weapon=S.equip&&S.equip.weapon;if(!player?.mesh?.userData?.arms?.R?.el)return;
+ const arm=player.mesh.userData.arms.R.el;
+ const old=arm.getObjectByName('blade-forge-detail');if(old)arm.remove(old);
+ if(!weapon)return;
+ const visual=weapon.visual||'sword',T=api.THREE,detail=new T.Group();detail.name='blade-forge-detail';
+ const gold=new T.MeshStandardMaterial({color:0xc99b52,metalness:.78,roughness:.28});
+ const silver=new T.MeshStandardMaterial({color:0xd9e7ef,metalness:.9,roughness:.2,emissive:0x263c4a});
+ const dark=new T.MeshStandardMaterial({color:0x342a24,metalness:.35,roughness:.7});
+ const box=(w,h,d,x,y,z,mat)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;detail.add(m);return m;};
+ let width=.105,center=.56,height=.72,guardY=.08;
+ if(visual==='greatsword'){width=.20;center=.82;height=1.12;guardY=.1;}
+ else if(visual==='dagger'){width=.085;center=.28;height=.42;guardY=.08;}
+ else if(visual==='dual'){width=.07;center=.55;height=.72;guardY=.05;}
+ else if(visual==='katana'){width=.105;center=.56;height=.78;guardY=.08;}
+ // 细化剑脊、两侧刃线与横档，让现有武器几何更有层次。
+ box(.012,height,.012,0,center,.026,silver);
+ box(.008,height*.88,.01,-width*.43,center,.025,gold);
+ box(.008,height*.88,.01,width*.43,center,.025,gold);
+ box(width*2.45,.045,.115,0,guardY,.015,gold);
+ box(.035,.035,.12,-width*1.05,guardY,.015,silver);
+ box(.035,.035,.12,width*1.05,guardY,.015,silver);
+ for(let n=0;n<3;n++){const ring=new T.Mesh(new T.TorusGeometry(.047-n*.004,.006,6,16),gold);ring.position.set(0,-.12-n*.075,.02);ring.rotation.x=Math.PI/2;detail.add(ring);}
+ const pommel=new T.Mesh(new T.SphereGeometry(.052,10,8),gold);pommel.position.set(0,-.34,.02);detail.add(pommel);
+ detail.position.set(.1,-.34,.1);detail.rotation.set(-.22,0,.3);arm.add(detail);lastWeaponUid=weapon.uid;
+}
+setInterval(()=>{const uid=S.equip?.weapon?.uid||'';if(uid!==lastWeaponUid)decorateBlade();},700);
 const css=`
 #blade-forge{position:fixed;left:max(10px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));z-index:10030;pointer-events:auto}
 #blade-forge>button{border:1px solid #d8b56c88;border-radius:999px;padding:8px 13px;background:#211b14eF;color:#ffe4a4;font-size:11px;box-shadow:0 4px 18px #0006}
