@@ -40,6 +40,8 @@ API.attack=function(...args){
  const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;
  p.pendingSkill={id:'class-basic-'+id,kind:s.kind,dmg:s.dmg,desc:s.name};
  p.action=s.action;p.actT=0;p.actDur=Math.max(.34,(API.CLS&&API.CLS.CLS_BY_ID&&API.CLS.CLS_BY_ID[id]?.stats?.rate||.55)*.9);p.actDone=false;
+ // 职业专属视觉反馈在攻击成功后明确触发，避免只设置技能状态却没有对应演出。
+ try{effect(id,p);}catch(e){console.warn('[class combat effect]',e);}
  try{if(G.emit)G.emit('toast',{text:s.name,kind:'info',dur:650});}catch(e){console.warn('[class combat]',e);}
  return ok;
 };
