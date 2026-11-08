@@ -28,9 +28,16 @@ function build(spec){
  const occupied=new Set([...nodeIdx,...turnSet]);
  const gateIdx=[];
  for(let q=0;q<nodeIdx.length-1;q++){let g=nodeIdx[q]+1;while(g<nodeIdx[q+1]&&(occupied.has(g)||gateIdx.includes(g)))g++;if(g<nodeIdx[q+1])gateIdx.push(g);}
- const tunerCandidates=straight.filter(i=>!occupied.has(i)&&!gateIdx.includes(i)&&i<nodeIdx[nodeIdx.length-1]);
  const tunerIdx=[];
- for(let q=0;q<Math.min(spec.tuners,tunerCandidates.length);q++){const pos=Math.floor((q+1)*tunerCandidates.length/(Math.min(spec.tuners,tunerCandidates.length)+1));tunerIdx.push(tunerCandidates[pos]);}
+ for(let q=0;q<spec.tuners;q++){
+  const target=nodeIdx[Math.min(q+1,nodeIdx.length-1)],lower=nodeIdx[Math.min(q,nodeIdx.length-1)];
+  const candidates=straight.filter(i=>i>lower&&i<target&&!occupied.has(i)&&!gateIdx.includes(i)&&!tunerIdx.includes(i));
+  if(candidates.length)tunerIdx.push(candidates[Math.floor((candidates.length-1)/2)]);
+ }
+ if(tunerIdx.length<spec.tuners){
+  const fallback=straight.filter(i=>!occupied.has(i)&&!gateIdx.includes(i)&&!tunerIdx.includes(i)&&i<nodeIdx[nodeIdx.length-1]);
+  while(tunerIdx.length<spec.tuners&&fallback.length)tunerIdx.push(fallback.shift());
+ }
  const solution={mirrors:{},tuners:{}},init={mirrors:{},tuners:{}};
  for(const t of turns){const k=key(path[t.index].x,path[t.index].y,n);solution.mirrors[k]=t.state;init.mirrors[k]=1-t.state;}
  const tunerAt=new Map();
