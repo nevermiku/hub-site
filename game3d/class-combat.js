@@ -10,14 +10,14 @@ const styles={
  berserker:{kind:'aoe',dmg:1.48,action:'attack',name:'狂战士 · 重型砸击'},
  katana:{kind:'pierce',dmg:1.38,action:'attack',name:'拔刀武士 · 居合贯斩'},
  rogue:{kind:'dash',dmg:1.18,action:'attack',name:'盗贼 · 突进毒刃'},
- archer:{kind:'bow',dmg:1.12,action:'bow',name:'弓手 · 远程箭击'},
- mage:{kind:'projectile',dmg:1.16,action:'cast',name:'法师 · 奥术弹'},
+ archer:{kind:'bow',dmg:.56,action:'bow',name:'弓手 · 远程箭击'},
+ mage:{kind:'projectile',dmg:.58,action:'cast',name:'法师 · 奥术弹'},
  cleric:{kind:'aoe',dmg:.82,action:'attack',name:'牧师 · 圣光脉冲'}
 };
 const baseSlash=FX.slash.bind(FX);
 FX.slash=function(x,y,z,dir,color){
  const p=G.player;
- if(p&&p.action==='attack')return;
+ if(p&&['attack','bow','cast'].includes(p.action))return;
  return baseSlash(x,y,z,dir,color);
 };
 function effect(id,p){
