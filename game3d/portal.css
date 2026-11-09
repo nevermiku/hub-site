@@ -17,3 +17,5 @@
 #title .bigBtn{box-shadow:0 8px 30px #df974b44;border:1px solid #ffe2a088}
 #title .clsCard{backdrop-filter:blur(8px)}
 @media(max-width:620px){#title .titleBox{padding:17px 13px;border-radius:18px}#title .logo{letter-spacing:6px}.site-specs{grid-template-columns:repeat(2,1fr);gap:6px}.site-spec{padding:8px}.site-spec b{font-size:15px}#title .tagline{font-size:11px;margin:10px auto 12px}.site-kicker{margin-bottom:10px}}
+
+#gl{filter:saturate(1.12) contrast(1.035)}#ui:after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 48%,#03091455 100%),linear-gradient(180deg,#06101a22,transparent 22%,transparent 78%,#03091444)}@media(max-width:700px){#title .titleBox{max-height:92dvh;overflow:auto}}
