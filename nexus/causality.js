@@ -40,7 +40,8 @@ const puzzles=[
 ['卷宗04','楼梯脚印含有淡水清洁剂，无法判断清理对象。',0],
 ['卷宗10','救援队曾为备用拖船设置临时呼号。',0],
 ['卷宗16','港区天气记录显示事故夜有短时强风。',0]
-],why:'卷宗19建立档案权限组的清理记录，卷宗22说明授权原表缺失但哈希仍可证明文件存在，卷宗23进一步指出短波缓存存在人工删除痕迹。三者共同构成持续干预证据留存的行为链。',boundary:'权限组账号和删除痕迹不能证明同一人执行了全部操作；哈希也不能还原原文件内容。'}
+],why:'卷宗19建立档案权限组的清理记录，卷宗22说明授权原表缺失但哈希仍可证明文件存在，卷宗23进一步指出短波缓存存在人工删除痕迹。三者共同构成持续干预证据留存的行为链。',boundary:'权限组账号和删除痕迹不能证明同一人执行了全部操作；哈希也不能还原原文件内容。'},
+{id:'chain-export',title:'因果链 F · 导出请求与工单补录',level:'终局',need:[17,20,23],prompt:'选择三条能够共同说明“有人发起过缓存导出请求，维修记录随后被补录”，但不能证明缓存成功导出或具体操作者身份的证据。',cards:[['卷宗17','维修平板在23:40发起缓存导出请求，服务器只保存请求编号，没有成功回执。',1],['卷宗20','纸质工单存在补录痕迹，补录时间晚于设备请求，签名栏只有班组章。',1],['卷宗23','短波接收缓存出现人工删除痕迹，但终端账号属于多人共用的管理权限组。',1],['卷宗05','馆长账号曾在事故夜刷卡离馆。',0],['卷宗12','备用拖船在旧船坞内侧留下潮线。',0],['卷宗21','死亡证明的印章批次存在矛盾。',0]],why:'导出请求、工单补录和缓存删除分别来自服务器、纸质档案与终端记录。它们建立了需要进一步核查的时间关联，但请求本身不等于导出成功。',boundary:'缺少服务器成功回执、原始设备镜像和个人登录映射，不能认定文件已经外传，也不能锁定执行者。'}
 ];
 let state={solved:[],attempts:{}};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}const validIds=new Set(puzzles.map(x=>x.id));state.solved=Array.isArray(state.solved)?[...new Set(state.solved.filter(id=>validIds.has(id)))]:[];if(!state.attempts||typeof state.attempts!=='object'||Array.isArray(state.attempts))state.attempts={};else state.attempts=Object.fromEntries(Object.entries(state.attempts).filter(([k,v])=>validIds.has(k)&&Number.isFinite(v)&&v>=0).map(([k,v])=>[k,Math.floor(v)]));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
