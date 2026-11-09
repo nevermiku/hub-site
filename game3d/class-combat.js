@@ -34,17 +34,19 @@ function effect(id,p){
  else if(id==='cleric'){FX.rune(x,y+.05,z,c,.85,2.2);FX.ring(x,y+.35,z,c,.12,3,.48);FX.particles(x,y+1,z,new T.Color(c),22,{spread:2.3,up:2.6,life:.6,size:.17});}
 }
 let attackSerial=0;
+const timing={swordsman:.48,dual:.82,lancer:.62,knight:.72,berserker:.96,katana:.76,rogue:.58,archer:.68,mage:.72,cleric:.78};
 const originalAttack=API.attack.bind(API);
 API.attack=function(...args){
  const ok=originalAttack(...args);if(!ok)return ok;
  const p=G.player;if(!p)return ok;
  const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;
  p.pendingSkill={id:'class-basic-'+id,kind:s.kind,dmg:s.dmg,desc:s.name,serial:++attackSerial};
- p.action=s.action;p.actT=0;p.actDur=Math.max(.34,(API.CLS&&API.CLS.CLS_BY_ID&&API.CLS.CLS_BY_ID[id]?.stats?.rate||.55)*.9);p.actDone=false;
- // 职业专属视觉反馈在攻击成功后明确触发，避免只设置技能状态却没有对应演出。
- try{effect(id,p);}catch(e){console.warn('[class combat effect]',e);}
- try{if(G.emit)G.emit('toast',{text:s.name,kind:'info',dur:650});}catch(e){console.warn('[class combat]',e);}
+ p.action=s.action;p.actT=0;
+ // 职业动作窗口按招式类型区分；命中时由核心伤害结算统一触发专属特效，避免起手和命中各播一次。
+ const rate=API.CLS&&API.CLS.CLS_BY_ID&&API.CLS.CLS_BY_ID[id]?.stats?.rate||.55;
+ p.actDur=Math.max(.32,(timing[id]||.58)*Math.max(.82,rate/.55));p.actDone=false;
+ try{if(G.emit)G.emit('toast',{text:s.name,kind:'info',dur:520});}catch(e){console.warn('[class combat]',e);}
  return ok;
 };
-window.__CLASS_COMBAT__={version:'2.1.0',styles,effect};
+window.__CLASS_COMBAT__={version:'2.2.0',styles,effect,timing};
 })();
