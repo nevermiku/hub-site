@@ -42,7 +42,7 @@ const puzzles=[
 ['卷宗16','港区天气记录显示事故夜有短时强风。',0]
 ],why:'卷宗19建立档案权限组的清理记录，卷宗22说明授权原表缺失但哈希仍可证明文件存在，卷宗23进一步指出短波缓存存在人工删除痕迹。三者共同构成持续干预证据留存的行为链。',boundary:'权限组账号和删除痕迹不能证明同一人执行了全部操作；哈希也不能还原原文件内容。'}
 ];
-let state={solved:[],attempts:{}};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}if(!Array.isArray(state.solved))state.solved=[];if(!state.attempts||typeof state.attempts!=='object')state.attempts={};
+let state={solved:[],attempts:{}};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}const validIds=new Set(puzzles.map(x=>x.id));state.solved=Array.isArray(state.solved)?[...new Set(state.solved.filter(id=>validIds.has(id)))]:[];if(!state.attempts||typeof state.attempts!=='object'||Array.isArray(state.attempts))state.attempts={};else state.attempts=Object.fromEntries(Object.entries(state.attempts).filter(([k,v])=>validIds.has(k)&&Number.isFinite(v)&&v>=0).map(([k,v])=>[k,Math.floor(v)]));
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function progress(){try{const s=JSON.parse(localStorage.getItem(SAVE)||'{}');return new Set(Array.isArray(s.cleared)?s.cleared:[])}catch(e){return new Set()}}
 const style=document.createElement('style');style.textContent=`
