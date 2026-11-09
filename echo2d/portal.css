@@ -18,3 +18,5 @@
 .echo-tags span{border:1px solid #ffffff1c;background:#ffffff08;border-radius:18px;padding:6px 10px;font-size:10px;color:#c0d2e4}
 #title .bigBtn{background:linear-gradient(100deg,#8fe8f5,#b8a0ff);color:#091522;box-shadow:0 8px 28px #6edcf544}
 @media(max-width:600px){#title .box{padding:18px 13px;border-radius:18px}#title .logo{letter-spacing:4px}.echo-stats{grid-template-columns:repeat(2,1fr);gap:6px}.echo-stat{padding:8px}.echo-stat b{font-size:16px}#title .tagline{font-size:11px;line-height:1.8}}
+
+#cv{filter:saturate(1.22) contrast(1.06)}#title .box:after{content:'';position:absolute;inset:auto 7% 12px;height:72px;pointer-events:none;background:radial-gradient(ellipse at 50% 100%,#72dfff22,transparent 68%);filter:blur(8px)}.echo-stats,.echo-stat{box-shadow:inset 0 1px #ffffff0c,0 10px 28px #0003}@media(max-width:600px){#title .box{max-height:92dvh;overflow:auto}.echo-stats{grid-template-columns:repeat(2,1fr)}}
