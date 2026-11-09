@@ -38,6 +38,11 @@ function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.
  else if(cls==='cleric'){add(geo.torus,gold,[0,.3,.03],[.26,.26,.05],[Math.PI/2,0,0]);add(geo.box,glow,[0,.3,.07],[.06,.42,.035]);}
  else if(cls==='dual'){for(const s of [-1,1])add(geo.box,steel,[s*.22,.34,.02],[.045,.55,.035],[0,0,s*.15]);}
  else {add(geo.box,gold,[0,.48,.03],[.32,.055,.04]);}
+ // 职业肩甲与背部轮廓：强化不同职业的体块辨识度。
+ const shoulderMat=cls==='berserker'?M.gold:cls==='mage'?M.cyan:M.silver;
+ for(const side of [-1,1]){add(geo.sphere,shoulderMat,[side*.29,.52,-.015],[.17,cls==='knight'?.13:.09,.14],[0,0,side*.18]);if(['lancer','katana','rogue'].includes(cls))add(geo.cone,steel,[side*.34,.57,-.02],[.055,.2,.055],[0,0,side*.45]);}
+ if(['mage','cleric'].includes(cls)){add(geo.cone,M.dark,[0,.04,-.16],[.29,.43,.08],[Math.PI,0,0]);add(geo.sphere,glow,[0,.14,-.24],[.07,.12,.035]);}
+ if(cls==='berserker'||cls==='knight'){add(geo.box,M.dark,[0,-.02,-.14],[.42,.22,.12]);for(let k=0;k<3;k++)add(geo.box,gold,[0,-.03-k*.055,-.21],[.34-k*.04,.018,.025]);}
  torso.add(g);torso.userData.__classRig=g;}
 function upgradeCharacter(){
  const p=G.player&&G.player.mesh;if(!p)return;
