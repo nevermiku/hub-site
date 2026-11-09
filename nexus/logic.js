@@ -8,7 +8,7 @@ const dossiers=[
 {id:'deletion',title:'档案删除交叉核验',need:[19,23],a:'卷宗 19：档案馆出现过权限组账号执行的记录清理操作。',b:'卷宗 23：短波接收缓存被人工删除，终端账号属于档案管理权限组。',q:'两处删除痕迹最合理的共同解释是？',o:['已经锁定同一名操作者','存在持续清理证据的行为链，但账号权限组不足以锁定具体个人','删除行为证明被删除内容全部属实'],ans:1,why:'相似的权限痕迹能提示组织层面的关联，却不能把权限组直接等同于某个成员。还需要终端登录、设备指纹和现场记录互证。'},
 {id:'causality',title:'因果链终局复核',need:[15,20,23],a:'卷宗 15：现场存在第二条进入观察窗夹层的路线。',b:'卷宗 20 与 23：沈知微留下可复核线索，后续档案仍出现权限操作与记录清理。',q:'哪项结论同时尊重了现场、档案和身份三类证据？',o:['所有行动者的身份和动机都已完全确定','可以确认存在被隐藏的行动路线与持续的证据清理，但不能把线索链直接等同于完整身份链','沈知微必然是全部事件的策划者'],ans:1,why:'路线、权限、记录与身份需要分别证明。证据能建立行动链的结构，却不自动补齐每个节点的执行者和动机。'}
 ];
-let state={solved:[]};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}if(!Array.isArray(state.solved))state.solved=[];
+let state={solved:[]};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}const validIds=new Set(dossiers.map(d=>d.id));state.solved=Array.isArray(state.solved)?[...new Set(state.solved.filter(id=>validIds.has(id)))]:[];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cleared(){try{const s=JSON.parse(localStorage.getItem(SAVE)||'{}');return new Set(Array.isArray(s.cleared)?s.cleared:[])}catch(e){return new Set()}}
 const css=`
