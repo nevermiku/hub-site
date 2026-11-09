@@ -28,3 +28,16 @@ header{min-height:58px;padding:10px 14px}
 #intro p{line-height:1.8;max-width:34em;margin:12px auto 20px}
 #sound{min-height:42px}
 @media(max-width:480px){header{padding:9px 12px}#inbox{padding:6px 11px 16px}#chat{padding:12px 9px 20px}.msg{max-width:88%}#intro{padding:20px 15px}}
+
+/* Messenger realism pass · message metadata, delivery state, status bar */
+#app:before{display:none}
+#phone-status{height:25px;background:#f7f8fa;color:#53616d;border-bottom:1px solid #e7eaed;letter-spacing:.3px}
+#phone-status .right{font-size:9px;color:#53616d}
+.msg-meta{margin:4px 3px 0;color:#9aa3ab;font-size:9px;line-height:1.2}
+.msg.me .msg-meta{text-align:right;color:#829b8a}
+.msg .bubble{position:relative;box-shadow:0 1px 2px #18242c12,0 4px 12px #18242c05}
+.msg:not(.me) .bubble{border-top-left-radius:4px}
+.msg.me .bubble{border-top-right-radius:4px}
+#night-toast{box-shadow:0 8px 28px #0004;border:1px solid #ffffff22;backdrop-filter:blur(12px)}
+#phone-status{font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.msg{animation:none!important}}
