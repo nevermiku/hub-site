@@ -41,7 +41,7 @@ toggle.onclick=()=>{panel.classList.toggle('open');if(active)toggle.textContent=
 play.onclick=start;stop.onclick=stopLoop;
 select.onchange=()=>{track=Number(select.value)||0;if(active)start()};
 volume.oninput=()=>{if(master)master.gain.setTargetAtTime(Number(volume.value)/100*.32,ctx.currentTime,.04)};
-window.addEventListener('pointerdown',()=>{if(!active)init()},{once:true});
+window.addEventListener('pointerdown',()=>{if(!active)setTimeout(()=>{if(!active)start()},140)},{once:true});
 window.addEventListener('pagehide',stopLoop);
 const win=$('#win'),replay=$('#btnReplaySong');if(replay)replay.addEventListener('click',start);
 if(win)new MutationObserver(()=>{if(!win.classList.contains('hidden')){panel.classList.add('open');if(!active)start()}}).observe(win,{attributes:true,attributeFilter:['class']});
