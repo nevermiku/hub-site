@@ -33,16 +33,26 @@ function effect(id,p){
  else if(id==='mage'){FX.cast('projectile',new T.Color(c),x,y+1.2,z,d);FX.rune(x+Math.sin(d)*.4,y+1,z+Math.cos(d)*.4,c,.48,1.4);}
  else if(id==='cleric'){FX.rune(x,y+.05,z,c,.85,2.2);FX.ring(x,y+.35,z,c,.12,3,.48);FX.particles(x,y+1,z,new T.Color(c),22,{spread:2.3,up:2.6,life:.6,size:.17});}
 }
-let attackSerial=0,comboChain=0,lastAttackAt=0;
+let attackSerial=0,comboChain=0,lastAttackAt=0,comboClass='';
 const timing={swordsman:.48,dual:.82,lancer:.62,knight:.72,berserker:.96,katana:.76,rogue:.58,archer:.68,mage:.72,cleric:.78};
 const originalAttack=API.attack.bind(API);
 API.attack=function(...args){
  const ok=originalAttack(...args);if(!ok)return ok;
  const p=G.player;if(!p)return ok;
  const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;
- const now=performance.now(),gap=now-lastAttackAt;comboChain=gap<1450?Math.min(5,comboChain+1):1;lastAttackAt=now;
- const chainBonus=['dual','rogue','katana'].includes(id)?1+Math.min(.24,(comboChain-1)*.06):1;
- const heavyBonus=id==='berserker'&&comboChain>=3?1.12:1;
+ const now=performance.now(),gap=now-lastAttackAt;
+ if(comboClass!==id||gap>=1450)comboChain=0;
+ comboClass=id;comboChain=Math.min(5,comboChain+1);lastAttackAt=now;
+ const chainStep=comboChain-1;
+ const chainBonus=id==='dual'?1+Math.min(.3,chainStep*.075):
+  id==='rogue'?1+Math.min(.28,chainStep*.07):
+  id==='katana'?1+Math.min(.32,chainStep*.08):
+  id==='lancer'?1+Math.min(.2,chainStep*.05):
+  id==='mage'?1+Math.min(.18,chainStep*.045):1;
+ const heavyBonus=id==='berserker'&&comboChain>=3?1.12:
+  id==='swordsman'&&comboChain===3?1.1:
+  id==='knight'&&comboChain===5?1.16:
+  id==='cleric'&&comboChain===5?1.1:1;
  p.pendingSkill={id:'class-basic-'+id,kind:s.kind,dmg:s.dmg*chainBonus*heavyBonus,desc:s.name,serial:++attackSerial,chain:comboChain,chainBonus,heavyBonus};
  p.comboChain=comboChain;
  p.action=s.action;p.actT=0;
@@ -52,5 +62,5 @@ API.attack=function(...args){
  try{if(G.emit)G.emit('toast',{text:comboChain>1?s.name+' · 连击 '+comboChain:s.name,kind:'info',dur:520});}catch(e){console.warn('[class combat]',e);}
  return ok;
 };
-window.__CLASS_COMBAT__={version:'2.3.0',styles,effect,timing,get combo(){return comboChain},resetCombo(){comboChain=0;lastAttackAt=0}};
+window.__CLASS_COMBAT__={version:'2.3.0',styles,effect,timing,get combo(){return comboChain},resetCombo(){comboChain=0;lastAttackAt=0;comboClass=''}};
 })();
