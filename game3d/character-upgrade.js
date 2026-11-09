@@ -4,7 +4,7 @@ if(!API||!T||!G)return;
 const mat=(color,metalness=.78,roughness=.27,emissive=0)=>new T.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:.42});
 const M={gold:mat(0xd9b36d,.88,.22,0x39220b),silver:mat(0xa8c2d8,.9,.2,0x1a3448),dark:mat(0x17283b,.72,.32),cyan:mat(0x55dfff,.55,.2,0x168dbb),leather:mat(0x382b2b,.22,.72),blade:mat(0xd9e7f2,.96,.16,0x243e58),edge:mat(0x8ee8ff,.9,.18,0x176c8c)};
 const geo={sphere:new T.SphereGeometry(1,20,14),box:new T.BoxGeometry(1,1,1),cone:new T.ConeGeometry(1,1,8),torus:new T.TorusGeometry(1,.08,8,28)};
-let lastPlayer=null,lastClass=null,lastFloor=-1,decor=null,bladeOwner=null;
+let lastPlayer=null,lastClass=null,lastFloor=-1,decor=null,bladeOwner=null,classRig=null;
 function mesh(parent,g,m,p,s,r){const o=new T.Mesh(g,m);o.position.set(...p);o.scale.set(...s);if(r)o.rotation.set(...r);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;}
 function plate(parent,p,s,rot){return mesh(parent,geo.box,M.silver,p,s,rot);}
 function syncDualOffhand(p,cls){
@@ -26,6 +26,19 @@ function syncDualOffhand(p,cls){
  host.userData.__dualOffhand=hand;
  return true;
 }
+function torsoRef(p){return p.userData&&p.userData.torso;}
+function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.__classRig;if(prior){torso.remove(prior);delete torso.userData.__classRig;}const g=new T.Group();g.name='class-silhouette-'+cls;const add=(geo0,ma,pos,scale,rot)=>mesh(g,geo0,ma,pos,scale,rot);const gold=M.gold,steel=M.silver,glow=M.cyan;
+ if(cls==='lancer'){add(geo.box,steel,[0,.5,.02],[.12,.58,.08]);add(geo.cone,gold,[0,.83,.02],[.11,.2,.11]);}
+ else if(cls==='knight'){add(geo.box,steel,[0,.15,.02],[.5,.24,.12]);add(geo.box,gold,[0,.3,.09],[.44,.05,.035]);}
+ else if(cls==='berserker'){for(const s of [-1,1]){add(geo.cone,gold,[s*.28,.42,0],[.13,.38,.13],[0,0,s*.55]);add(geo.box,M.dark,[s*.23,.1,.04],[.18,.2,.16]);}}
+ else if(cls==='katana'){add(geo.box,glow,[0,.47,.08],[.035,.64,.025]);add(geo.box,gold,[0,.13,.1],[.22,.035,.04]);}
+ else if(cls==='rogue'){for(const s of [-1,1])add(geo.cone,M.dark,[s*.27,.48,0],[.11,.3,.12],[0,0,s*.45]);add(geo.sphere,glow,[0,.38,.1],[.08,.08,.035]);}
+ else if(cls==='archer'){add(geo.torus,gold,[0,.32,.02],[.25,.38,.06],[0,0,.2]);add(geo.box,steel,[0,.32,.08],[.025,.72,.025]);}
+ else if(cls==='mage'){add(geo.cone,M.dark,[0,.38,0],[.32,.43,.24]);add(geo.sphere,glow,[0,.43,.19],[.09,.09,.04]);}
+ else if(cls==='cleric'){add(geo.torus,gold,[0,.3,.03],[.26,.26,.05],[Math.PI/2,0,0]);add(geo.box,glow,[0,.3,.07],[.06,.42,.035]);}
+ else if(cls==='dual'){for(const s of [-1,1])add(geo.box,steel,[s*.22,.34,.02],[.045,.55,.035],[0,0,s*.15]);}
+ else {add(geo.box,gold,[0,.48,.03],[.32,.055,.04]);}
+ torso.add(g);torso.userData.__classRig=g;}
 function upgradeCharacter(){
  const p=G.player&&G.player.mesh;if(!p)return;
  const cls=API.SAVE&&API.SAVE.cls||'swordsman',newPlayer=p!==lastPlayer;
@@ -33,7 +46,7 @@ function upgradeCharacter(){
   if(cls==='dual'&&!(p.userData&&p.userData.arms&&p.userData.arms.L&&p.userData.arms.L.el&&p.userData.arms.L.el.userData.__dualOffhand))syncDualOffhand(p,cls);
   return;
  }
- if(!newPlayer){if(syncDualOffhand(p,cls)!==false)lastClass=cls;return;}
+ if(!newPlayer){if(syncDualOffhand(p,cls)!==false){lastClass=cls;applyClassRig(p,cls,torsoRef(p));}return;}
  lastPlayer=p;lastClass=cls;
  const d=p.userData||{},torso=d.torso,head=d.head,arms=d.arms||{},legs=d.legs||{};
  if(torso){
@@ -82,6 +95,7 @@ function upgradeCharacter(){
  }
  // 双刀副手随职业切换同步；切回其他职业时自动卸下副手。
  syncDualOffhand(p,cls);
+ applyClassRig(p,cls,torso);
  p.userData.__mobileArmorV2=true;
 }
 function buildSkyline(){
