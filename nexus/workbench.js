@@ -53,7 +53,7 @@ $('#ewFile').addEventListener('change',()=>{
   try{
    const data=JSON.parse(String(reader.result||'')),incoming=Array.isArray(data)?data:data.records;
    if(!Array.isArray(incoming))throw new Error('格式不正确');
-   const clean=incoming.filter(n=>n&&typeof n.id==='string'&&Number.isFinite(Number(n.case))&&Array.isArray(n.items)&&n.items.length>=2&&n.items.length<=4&&n.items.every(x=>typeof x==='string'&&x.length<=2000)).map(n=>({id:n.id,case:Math.max(0,Math.min(99,Number(n.case))),title:String(n.title||'').slice(0,120),items:n.items.map(x=>x.slice(0,2000)),time:Number(n.time)||Date.now()}));
+   const clean=incoming.filter(n=>n&&typeof n.id==='string'&&Number.isFinite(Number(n.case))&&Array.isArray(n.items)&&n.items.length>=2&&n.items.length<=4&&n.items.every(x=>typeof x==='string'&&x.length<=2000)).map(n=>({id:n.id,case:Math.max(0,Math.min(99,Number(n.case))),title:String(n.title||'').slice(0,120),items:n.items.map(x=>x.slice(0,2000)),relation:['supports','contradicts','sequence','unknown'].includes(n.relation)?n.relation:'unknown',inference:String(n.inference||'').slice(0,600),time:Number(n.time)||Date.now()}));
    const byId=new Map(records.map(n=>[n.id,n]));clean.forEach(n=>byId.set(n.id,n));records=Array.from(byId.values());
    localStorage.setItem(KEY,JSON.stringify(records));render();alert('导入完成：新增或更新 '+clean.length+' 条笔记。');
   }catch(e){alert('导入失败：文件格式不正确，或本机存储空间不足。');}
