@@ -99,6 +99,30 @@ function buildSkyline(){
   add(new T.BoxGeometry(4.2,.48,4.2),stone,x,-.9,z,1,1,1);
   if(i%2===0)add(new T.OctahedronGeometry(.8,0),crystal,x*.82,3+(i%3),z*.82,1,2.3,1);
  }
+ // 中景城郭：分层屋顶、窗格与横向连桥，避免远景只有孤立塔柱。
+ for(let i=0;i<18;i++){
+  const a=i*Math.PI/9,r=23+(i%3)*2,x=Math.cos(a)*r,z=Math.sin(a)*r,h=2.8+(i%5)*.72;
+  add(new T.BoxGeometry(3.8,h,3.2),stone,x,h/2-1.1,z,1,1,1);
+  add(new T.ConeGeometry(2.55,1.65,4),roof,x,h+.05,z,1,1,1).rotation.y=Math.PI/4;
+  for(let f=0;f<3;f++)for(let side of [-1,1]){
+   const wx=x+side*.72,wy=.05+f*.72;
+   add(new T.BoxGeometry(.22,.34,.055),warm,wx,wy,z-1.63,1,1,1);
+  }
+ }
+ // 主入口：双层拱门、门楣浮雕与两侧悬挂晶灯。
+ for(let side of [-1,1]){
+  add(new T.BoxGeometry(.72,6.2,1.1),stone,side*4,2.1,9,1,1,1);
+  add(new T.BoxGeometry(1.05,.42,1.35),warm,side*4,5.25,9,1,1,1);
+  add(new T.OctahedronGeometry(.48,1),crystal,side*4,4.25,8.3,1,1.7,1);
+ }
+ add(new T.BoxGeometry(8.8,.8,1.2),stone,0,5.4,9,1,1,1);
+ add(new T.TorusGeometry(2.45,.16,10,48),warm,0,3.2,9.1,1,1,1).rotation.y=Math.PI/2;
+ // 浮岛间的高架连廊增加空间纵深。
+ for(let i=0;i<4;i++){
+  const a=i*Math.PI/2,x=Math.cos(a)*25,z=Math.sin(a)*25;
+  const bridge=add(new T.BoxGeometry(13,.28,1.35),stone,x,2.4,z,1,1,1);bridge.rotation.y=-a;
+  const rail=add(new T.BoxGeometry(13,.12,.12),warm,x,3.05,z,1,1,1);rail.rotation.y=-a;
+ }
  // 高空环廊与主塔，给远景增加体量层次
  const ring=add(new T.TorusGeometry(21,.18,10,120),warm,0,14,0,1,1,1);ring.rotation.x=Math.PI/2;
  const ring2=add(new T.TorusGeometry(12,.12,8,100),crystal,0,21,0,1,1,1);ring2.rotation.x=Math.PI/2;
