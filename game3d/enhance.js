@@ -17,4 +17,27 @@ if(damage)new MutationObserver(()=>{const op=Number(getComputedStyle(damage).opa
 document.addEventListener('pointerup',e=>{if(p.haptics&&navigator.vibrate&&e.target.closest('#actions button,#skillbar button,#btnRevive'))navigator.vibrate(14);},{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(()=>window.dispatchEvent(new Event('resize')),180));
 window.__SWORD_BREAK_ENHANCE__={version:'2.0.0',get preferences(){return {...p};}};
+
+/* ORIGINAL LOCAL HUNT BGM · adaptive orchestral synth */
+(()=>{const A=window.__AINCRAD3D__;if(!A)return;let c=null,m=null,fx=null,timer=0,step=0,on=false,muted=false;
+const style=document.createElement('style');style.textContent='#s3d-bgm{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));z-index:10030;border:1px solid #e8bd7b88;border-radius:24px;background:#101a25ed;color:#ffe3b1;padding:10px 14px;font:700 11px system-ui;box-shadow:0 8px 28px #0008}#s3d-bgm.on{background:linear-gradient(120deg,#5b3423,#202c36);box-shadow:0 0 24px #e7a34a44}';document.head.append(style);
+const b=document.createElement('button');b.id='s3d-bgm';b.textContent='♫ 狩猎战曲：待启动';document.body.append(b);
+const prog=[[0,3,5,4],[0,5,3,4],[2,5,0,3],[0,3,4,5]],scale=[0,2,3,7,9],root=45,bpm=108;
+function init(){if(!c){const AC=AudioContext||webkitAudioContext;c=new AC();m=c.createGain();m.gain.value=.24;fx=c.createBiquadFilter();fx.type='lowpass';fx.frequency.value=5000;fx.connect(m);m.connect(c.destination)}if(c.state==='suspended')c.resume()}
+function tone(n,t,d,w='sawtooth',v=.04,end){const o=c.createOscillator(),g=c.createGain();o.type=w;o.frequency.setValueAtTime(440*Math.pow(2,(n-69)/12),t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+.025);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(fx);o.start(t);o.stop(t+d+.04)}
+function beat(){if(!on)return;init();const t=c.currentTime+.04,bar=Math.floor(step/16),p=step%16,ch=prog[bar%4],deg=scale[ch[0]],bt=60/bpm;
+ if(p===0){[0,2,4].forEach((v,i)=>tone(root+deg+v+12,t,bt*3.6,'sawtooth',.024));tone(root-12+deg,t,bt*1.6,'triangle',.075)}
+ if(p%4===0){tone(35,t,.18,'sine',.13,30);tone(root+scale[ch[(p/4)%4]]+24,t,.32,'sawtooth',.048)}
+ if(p%2===1)tone(84,t,.045,'square',.012);
+ if(p===4||p===12)tone(42,t,.16,'sine',.04,28);
+ const melody=[0,2,3,4,2,1,3,2,0,2,4,3,1,2,3,4][p];tone(root+12+scale[melody],t,bt*.62,'triangle',p%4===0?.05:.028);
+ step++;if(step%64===0)fx.frequency.setTargetAtTime(3200+(Math.random()*1800),c.currentTime,.6);
+}
+function start(){init();if(timer)clearInterval(timer);step=0;on=true;timer=setInterval(beat,60/bpm*250);b.classList.add('on');b.textContent='♫ 狩猎战曲：播放中'}
+function stop(){if(timer)clearInterval(timer);timer=0;on=false;b.classList.remove('on');b.textContent='♫ 狩猎战曲：已暂停'}
+b.onclick=()=>on?stop():start();
+document.addEventListener('pointerdown',()=>{if(!on)setTimeout(()=>{if(!on)start()},120)},{once:true});
+window.addEventListener('pagehide',stop);
+window.__SWORD_BGM__={start,stop,get playing(){return on}};
+})();
 })();
