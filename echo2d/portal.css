@@ -32,3 +32,21 @@
 #win .box{width:min(92vw,650px);max-height:90dvh;overflow:auto;padding:clamp(16px,3vw,26px)}
 #win .lyricBox{margin:12px 0;border-radius:14px}
 @media(max-width:600px){#title .box{width:94vw;padding:16px 12px}#win .box{width:94vw;padding:15px 12px}.echo-stats{gap:7px}}
+
+
+/* ECHO visual pass 42 · 全屏舞台层次与节奏反馈 */
+#game{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#183d53 0%,#0a1d30 48%,#050b16 100%)}
+#game:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 35%,#02081255 100%),repeating-linear-gradient(0deg,#9beaff08 0 1px,transparent 1px 5px);mix-blend-mode:screen;opacity:.46}
+#game:after{content:"";position:absolute;inset:-20%;z-index:0;pointer-events:none;background:conic-gradient(from 0deg at 50% 50%,transparent 0 18%,#67dfff0b 22%,transparent 29% 48%,#b18cff0b 55%,transparent 64%);animation:echoStageDrift 28s linear infinite}
+#cv{position:relative;z-index:1;filter:saturate(1.32) contrast(1.09) brightness(1.035);box-shadow:inset 0 0 70px #030b17aa}
+#game button,#game .panel,#game .modal,#win{position:relative;z-index:2}
+@keyframes echoStageDrift{to{transform:rotate(360deg)}}
+#win{backdrop-filter:blur(12px);background:radial-gradient(ellipse at 50% 20%,#28516bdb,#081322f5 75%)}
+#win .box{border:1px solid #a6eaff44;box-shadow:0 24px 90px #000b,inset 0 1px #ffffff18}
+#win h1,#win h2{color:#dff8ff;text-shadow:0 0 24px #66dfff66}
+#win button{border:1px solid #9deaff55;box-shadow:0 6px 20px #0005}
+#title .box{box-shadow:0 30px 100px #000b,inset 0 1px #ffffff1a,0 0 60px #4bc7ff14}
+.echo-wave i{filter:drop-shadow(0 0 7px #6de8ff88)}
+@media(prefers-reduced-motion:reduce){#game:after,.echo-wave i{animation:none!important}}
+@media(max-width:600px){#game:before{opacity:.25}#cv{filter:saturate(1.2) contrast(1.05)}}
+
