@@ -48,6 +48,6 @@ function finish(kind){S.ending=kind;S.flags.lastRoute=kind;persist();let lines={
 function start(){let i=$('#intro');if(i)i.remove();home();open('group')}
 $('#start').onclick=start;$('#back').onclick=home;$('#more').onclick=()=>{if(active!=='inbox')home();else system('聊天记录已同步到本机。')};$('#sound').onclick=()=>{sound=!sound;$('#sound').textContent='♫ 音效：'+(sound?'开':'关');if(sound)beep(440)};
 window.__NIGHTCHAT__={get state(){return JSON.parse(JSON.stringify(S))},reset(){localStorage.removeItem(KEY);location.reload()},open,continueStory:chapterHub,jumpToChapter(n){if(!Number.isInteger(n)||n<1||n>5)return false;S.chapter=n;persist();chapterHub();return true}};
-if(S.chapter>=2){let b=document.createElement('button');b.id='resume';b.textContent='继续上次调查';b.onclick=()=>{let i=$('#intro');if(i)i.remove();if(S.chapter===2)chapterTwo();else if(S.chapter===3)chapterThree();else if(S.chapter===4)chapterFour();else chapterFive()};$('#start').after(b)}
+if(S.chapter>=2){let b=document.createElement('button');b.id='resume';b.textContent='继续上次调查';b.onclick=()=>{let i=$('#intro');if(i)i.remove();chapterHub()};$('#start').after(b)}
 window.addEventListener('pagehide',clear);
 })();
