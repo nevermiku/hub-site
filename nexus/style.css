@@ -10,3 +10,24 @@ button{min-height:40px}
 .evidence-entry p{line-height:1.75}
 h1,h2,h3{line-height:1.3}
 @media(max-width:700px){body{font-size:14px}.evidence-entry{padding:11px}.cast{gap:9px}.stats{gap:7px}}
+
+/* WARM HARBOR EDITION · readable, welcoming casebook */
+:root{color-scheme:light;--bg:#f3efe4;--panel:#fffaf0;--line:#d8d0bd;--text:#35443d;--muted:#778579;--cyan:#568b84;--gold:#b47d3f}
+html,body{background:linear-gradient(145deg,#f7f2e7,#e8eee4 58%,#f4e8d8)!important;color:#34443c}
+body{background-attachment:fixed}
+.hero,.case-head,.card{border-color:#d8d0bd!important;background:linear-gradient(135deg,#fffaf1,#f3f0e5)!important;box-shadow:0 12px 34px #6b654515!important;color:#34443c}
+.hero p,.case-head p{color:#68776d!important}
+.eyebrow,.person b,.chapter>span,.meta{color:#57877c!important}
+.brand small,.chapter small,.person p,.muted{color:#7c887d!important}
+.sigil{border-color:#83aa9566!important;color:#57877c!important;box-shadow:0 0 18px #7ba78c22!important}
+.ghost,.secondary,.chapter,.person{background:#fffaf2!important;border-color:#ded6c5!important;color:#415248!important}
+.primary{background:linear-gradient(130deg,#85bca0,#c5d8ad)!important;border-color:#82a98c!important;color:#203d31!important}
+.stat{background:#f6f0e3!important;border-color:#ded6c5!important}
+.stat b{color:#b47d3f!important}
+.storybox{background:#fff2d9!important;color:#5d513d!important;border-color:#e6c98f!important}
+.storybox p,.clues li{color:#5c675e!important}
+.chapter.locked{opacity:.52}
+input,textarea,select{background:#fffdf7!important;color:#34443c!important;border-color:#d7d0c0!important}
+button{transition:transform .12s,filter .12s}
+button:active{transform:translateY(1px)}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
