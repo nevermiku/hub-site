@@ -12,3 +12,19 @@ header{box-shadow:0 2px 7px #15202b08}
 #sound{box-shadow:0 4px 16px #0003;backdrop-filter:blur(10px)}
 @keyframes msgArrive{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:480px){#app{max-width:none}#chat{padding:10px 9px}.msg{margin:12px 0}}
+
+/* UI cleanup pass: realistic messenger, cleaner hierarchy */
+#app{overflow:hidden}
+header{min-height:58px;padding:10px 14px}
+#inbox{padding:8px 14px 18px}
+#threads{display:flex;flex-direction:column}
+#threads>*{min-height:68px}
+#chat{padding:14px 12px 22px;overscroll-behavior:contain}
+.msg{max-width:min(82%,520px)}
+.msg .bubble{line-height:1.6;padding:10px 12px;border-radius:13px}
+#choices{padding:10px 12px max(14px,env(safe-area-inset-bottom));gap:8px}
+#choices button,#start{min-height:44px;border-radius:12px}
+#intro{padding:24px 20px}
+#intro p{line-height:1.8;max-width:34em;margin:12px auto 20px}
+#sound{min-height:42px}
+@media(max-width:480px){header{padding:9px 12px}#inbox{padding:6px 11px 16px}#chat{padding:12px 9px 20px}.msg{max-width:88%}#intro{padding:20px 15px}}
