@@ -1,4 +1,4 @@
-const CACHE='nexus-casebook-v38';
+const CACHE='nexus-casebook-v39';
 const CORE=['./','./index.html','./game.js','./board.js','./logic.js','./tabletop.js','./contradictions.js','./causality.js','./style.css','./portal.css','./portal.js','./tutorial.js','./workbench.js','./case-experience.js','./manifest.json'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
