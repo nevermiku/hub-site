@@ -7,7 +7,9 @@ const dossiers=[
 {id:'signal',title:'短波信号交叉核验',need:[20,21],a:'卷宗 21：死亡证明的签发链存在日期、印章与交接记录矛盾。',b:'卷宗 22：官方死亡日期之后出现使用旧校验节奏的短波信号，但密钥曾被复制。',q:'关于闻秋的状态，证据允许得出什么结论？',o:['闻秋已被证实存活并亲自发报','死亡记录不可靠，旧凭据在之后被使用；发报者身份和闻秋生死仍未证实','短波信号证明死亡证明完全真实'],ans:1,why:'伪造或不可靠的死亡记录不能自动证明当事人仍然存活；被复制的密钥也不能作为发送者身份认证。结论必须保留证据边界。'},
 {id:'deletion',title:'档案删除交叉核验',need:[19,23],a:'卷宗 19：档案馆出现过权限组账号执行的记录清理操作。',b:'卷宗 23：短波接收缓存被人工删除，终端账号属于档案管理权限组。',q:'两处删除痕迹最合理的共同解释是？',o:['已经锁定同一名操作者','存在持续清理证据的行为链，但账号权限组不足以锁定具体个人','删除行为证明被删除内容全部属实'],ans:1,why:'相似的权限痕迹能提示组织层面的关联，却不能把权限组直接等同于某个成员。还需要终端登录、设备指纹和现场记录互证。'},
 {id:'causality',title:'因果链终局复核',need:[15,20,23],a:'卷宗 15：现场存在第二条进入观察窗夹层的路线。',b:'卷宗 20 与 23：沈知微留下可复核线索，后续档案仍出现权限操作与记录清理。',q:'哪项结论同时尊重了现场、档案和身份三类证据？',o:['所有行动者的身份和动机都已完全确定','可以确认存在被隐藏的行动路线与持续的证据清理，但不能把线索链直接等同于完整身份链','沈知微必然是全部事件的策划者'],ans:1,why:'路线、权限、记录与身份需要分别证明。证据能建立行动链的结构，却不自动补齐每个节点的执行者和动机。'}
-];
+,
+{id:'supply',title:'物资与封条交叉核验',need:[10,14,16],a:'卷宗 10：备用电源采购数量与入库单相符，但批次封条编号有两处重复。',b:'卷宗 14：维修领用单记录了同批次电源模块，签收栏只有部门章，没有个人签名。',q:'这两份材料可以支持哪项结论？',o:['已经证明某位维修员偷换了电源模块','物资流转存在无法落实到个人的签收缺口，封条重复值得追查，但尚不能认定实际调换者','重复编号必然是录入错误，可以排除人为因素'],ans:1,why:'采购、入库和领用记录之间出现了可核验的控制缺口，但部门章不能证明某个人实际签收，更不能直接证明模块已被调换。'},
+{id:'clockchain',title:'时钟与维护链交叉核验',need:[7,11,17],a:'卷宗 07：灯塔控制器的本地时钟比港区授时慢六分钟，校时服务在案发前被关闭。',b:'卷宗 17：维护终端记录显示校时服务关闭指令来自共享维护账号，操作时段内有两张有效工单。',q:'目前最稳妥的判断是什么？',o:['关闭校时服务的人就是案发当晚进入灯塔的人','本地时间记录存在系统性偏差，维护账号执行过关闭操作，但两张工单使具体执行者仍无法确定','控制器时间偏差证明所有现场记录都是伪造的'],ans:1,why:'时钟偏差会影响事件先后顺序，维护账号记录能说明权限被使用；但共享账号和并行工单不足以单独确认操作者身份。'}];
 let state={solved:[],notes:{},analysis:{}};try{state=Object.assign(state,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}const validIds=new Set(dossiers.map(d=>d.id));state.solved=Array.isArray(state.solved)?[...new Set(state.solved.filter(id=>validIds.has(id)))]:[];state.notes=state.notes&&typeof state.notes==='object'&&!Array.isArray(state.notes)?state.notes:{};state.analysis=state.analysis&&typeof state.analysis==='object'&&!Array.isArray(state.analysis)?state.analysis:{};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cleared(){try{const s=JSON.parse(localStorage.getItem(SAVE)||'{}');return new Set(Array.isArray(s.cleared)?s.cleared:[])}catch(e){return new Set()}}
@@ -39,5 +41,5 @@ panel.addEventListener('click',e=>{const b=e.target.closest('[data-check]');if(!
 const attach=()=>{const target=$('#evidenceBtn');if(target&&!$('#nexus-cross-btn')){const b=document.createElement('button');b.id='nexus-cross-btn';b.textContent='证据交叉验证';b.onclick=open;target.after(b);}};
 new MutationObserver(attach).observe(document.body,{childList:true,subtree:true});attach();
 window.addEventListener('storage',e=>{if(e.key===SAVE&&panel.classList.contains('open'))render();});
-window.__NEXUS_CROSS__={version:'1.2.0',dossiers:dossiers.length,open,get records(){return JSON.parse(JSON.stringify(state))}};
+window.__NEXUS_CROSS__={version:'1.3.0',dossiers:dossiers.length,open,get records(){return JSON.parse(JSON.stringify(state))}};
 })();
