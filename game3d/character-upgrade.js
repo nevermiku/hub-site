@@ -59,6 +59,13 @@ function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.
  for(const side of [-1,1]){add(geo.sphere,shoulderMat,[side*.29,.52,-.015],[.17,cls==='knight'?.13:.09,.14],[0,0,side*.18]);if(['lancer','katana','rogue'].includes(cls))add(geo.cone,steel,[side*.34,.57,-.02],[.055,.2,.055],[0,0,side*.45]);}
  if(['mage','cleric'].includes(cls)){add(geo.cone,M.dark,[0,.04,-.16],[.29,.43,.08],[Math.PI,0,0]);add(geo.sphere,glow,[0,.14,-.24],[.07,.12,.035]);}
  if(cls==='berserker'||cls==='knight'){add(geo.box,M.dark,[0,-.02,-.14],[.42,.22,.12]);for(let k=0;k<3;k++)add(geo.box,gold,[0,-.03-k*.055,-.21],[.34-k*.04,.018,.025]);}
+ // 职业背部结构：披风、箭袋、法器背架与重甲背板采用不同轮廓。
+ const backMat=cls==='mage'||cls==='cleric'?M.cyan:cls==='berserker'?M.gold:cls==='rogue'?M.dark:M.silver;
+ if(['knight','lancer','swordsman','katana','berserker'].includes(cls)){add(geo.box,M.dark,[0,.12,-.205],[.39,.43,.075],[.12,0,0]);add(geo.box,backMat,[0,.2,-.255],[.31,.34,.035],[.12,0,0]);for(let side of [-1,1])add(geo.box,M.gold,[side*.17,.16,-.275],[.035,.34,.025],[.12,0,side*.12]);}
+ else if(cls==='archer'){add(geo.box,M.leather,[0,.18,-.2],[.3,.5,.075],[.08,0,0]);for(let k=0;k<5;k++)add(geo.cone,M.silver,[-.12+k*.06,.46,-.25],[.018,.2,.018],[0,0,(k-2)*.07]);}
+ else if(cls==='mage'||cls==='cleric'){add(geo.torus,backMat,[0,.22,-.22],[.28,.38,.06],[Math.PI/2,0,0]);add(geo.sphere,glow,[0,.22,-.28],[.12,.16,.08]);for(let side of [-1,1])add(geo.box,M.dark,[side*.25,.06,-.2],[.09,.34,.07],[0,0,side*.16]);}
+ else if(cls==='rogue'||cls==='dual'){for(let side of [-1,1]){add(geo.box,M.dark,[side*.18,.16,-.22],[.13,.42,.055],[0,0,side*.24]);add(geo.cone,M.silver,[side*.2,-.12,-.24],[.045,.2,.045],[0,0,side*.18]);}}
+ for(let side of [-1,1]){add(geo.box,backMat,[side*.31,.46,.02],[.2,.09,.18],[0,0,side*.18]);add(geo.sphere,M.gold,[side*.31,.47,.115],[.035,.035,.025]);}
  torso.add(g);torso.userData.__classRig=g;}
 function upgradeCharacter(){
  const p=G.player&&G.player.mesh;if(!p)return;
@@ -103,6 +110,7 @@ function upgradeCharacter(){
   }
  }
  if(head){
+  if(!head.userData.__armorHelmetV3){mesh(head,geo.box,M.dark,[0,.19,.015],[.31,.12,.25]);mesh(head,geo.box,M.silver,[0,.145,.135],[.25,.045,.035]);mesh(head,geo.box,M.gold,[0,.105,.155],[.045,.13,.035]);for(const side of [-1,1]){mesh(head,geo.box,M.silver,[side*.145,.04,.04],[.055,.2,.16],[0,0,side*.12]);mesh(head,geo.cone,M.gold,[side*.17,.19,-.015],[.045,.17,.045],[0,0,side*.35]);}head.userData.__armorHelmetV3=true;}
   mesh(head,geo.cone,M.gold,[0,.27,-.015],[.06,.2,.06]);
   mesh(head,geo.box,M.cyan,[0,.1,.158],[.14,.024,.018]);
   mesh(head,geo.sphere,M.gold,[0,.03,-.1],[.16,.045,.06]);
@@ -173,5 +181,5 @@ function buildSkyline(){
 }
 function tick(){if(!G.world)return;upgradeCharacter();if(G.floor!==lastFloor){lastFloor=G.floor;buildSkyline();}}
 let frames=0;function loop(){if(++frames%14===0)try{tick()}catch(e){console.warn('[AINCRAD armor]',e)}requestAnimationFrame(loop)}requestAnimationFrame(loop);
-window.__AINCRAD_CHARACTER_UPGRADE__={version:'2.0.0',refresh:upgradeCharacter,rebuild:buildSkyline};
+window.__AINCRAD_CHARACTER_UPGRADE__={version:'3.0.0',refresh:upgradeCharacter,rebuild:buildSkyline};
 })();
