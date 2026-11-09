@@ -29,17 +29,18 @@ function effect(id,p){
  else if(id==='berserker'){FX.shock(x,y+.05,z,c,4.2,.46);FX.ring(x,y+.08,z,0xffc08a,.25,4.5,.42);FX.particles(x,y+.2,z,new T.Color(c),32,{spread:3.8,up:2.8,life:.55,size:.22});}
  else if(id==='katana'){FX.trail(x,y+.1,z,d,c,5.8);FX.burst(x,y+1.1,z,new T.Color(c),1.1,.26);FX.particles(x,y+1,z,new T.Color(0xffffff),14,{spread:2,up:1.2,life:.25,size:.13});}
  else if(id==='rogue'){baseSlash(x,y+.16,z,d-.24,c);baseSlash(x,y+.16,z,d+.24,0xb9ff9d);FX.particles(x,y+.65,z,new T.Color(0x79e69b),18,{spread:2,up:1.3,life:.5,size:.15});}
- else if(id==='archer'){FX.lance(x,y+1.22,z,d,c,8.2);FX.trail(x,y+1.2,z,d,c,4.4);}
+ else if(id==='archer'){FX.burst(x,y+1.15,z,new T.Color(0xdfffb0),.52,.16);FX.particles(x,y+1.2,z,new T.Color(0xd8f4a0),20,{spread:1.15,up:.55,life:.32,size:.075});}
  else if(id==='mage'){FX.cast('projectile',new T.Color(c),x,y+1.2,z,d);FX.rune(x+Math.sin(d)*.4,y+1,z+Math.cos(d)*.4,c,.48,1.4);}
  else if(id==='cleric'){FX.rune(x,y+.05,z,c,.85,2.2);FX.ring(x,y+.35,z,c,.12,3,.48);FX.particles(x,y+1,z,new T.Color(c),22,{spread:2.3,up:2.6,life:.6,size:.17});}
 }
 let attackSerial=0,comboChain=0,lastAttackAt=0,comboClass='';
 const timing={swordsman:.48,dual:.82,lancer:.62,knight:.72,berserker:.96,katana:.76,rogue:.58,archer:.68,mage:.72,cleric:.78};
+function fireArrow(p){try{const world=G.world&&G.world.worldGroup;if(!world||!p)return;const group=new T.Group(),wood=new T.MeshStandardMaterial({color:0x9a7046,roughness:.62}),steel=new T.MeshStandardMaterial({color:0xcfe8e8,metalness:.82,roughness:.22,emissive:0x24434a}),feather=new T.MeshStandardMaterial({color:0xd8edb5,roughness:.8});const shaft=new T.Mesh(new T.CylinderGeometry(.025,.035,1.18,7),wood);shaft.rotation.x=Math.PI/2;shaft.position.z=.02;group.add(shaft);const tip=new T.Mesh(new T.ConeGeometry(.075,.24,6),steel);tip.rotation.x=Math.PI/2;tip.position.z=.72;group.add(tip);for(const side of [-1,1]){const fin=new T.Mesh(new T.BoxGeometry(.035,.16,.22),feather);fin.position.set(side*.045,0,-.47);fin.rotation.z=side*.3;group.add(fin);}const d=Number(p.dir)||0;group.position.set(p.x+Math.sin(d)*.7,p.y+1.2,p.z+Math.cos(d)*.7);group.rotation.y=d;world.add(group);const born=performance.now(),start=group.position.clone(),duration=300;function fly(now){const k=Math.min(1,(now-born)/duration);group.position.copy(start).add(new T.Vector3(Math.sin(d),.02,Math.cos(d)).multiplyScalar(k*10));group.position.y+=Math.sin(k*Math.PI)*.22;if(k<1)requestAnimationFrame(fly);else{world.remove(group);group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()});}}requestAnimationFrame(fly);}catch(e){console.warn('[archer arrow]',e)}}
 const originalAttack=API.attack.bind(API);
 API.attack=function(...args){
  const ok=originalAttack(...args);if(!ok)return ok;
  const p=G.player;if(!p)return ok;
- const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;
+ const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;if(id==='archer')fireArrow(p);
  const now=performance.now(),gap=now-lastAttackAt;
  if(comboClass!==id||gap>=1450)comboChain=0;
  comboClass=id;comboChain=Math.min(5,comboChain+1);lastAttackAt=now;
