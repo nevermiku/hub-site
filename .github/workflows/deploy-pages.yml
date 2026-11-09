@@ -23,6 +23,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Download locally deployed photo assets
+        run: |
+          set -e
+          mkdir -p nexus/assets rulechat/assets
+          get_photo() { curl -fLsS --retry 3 --retry-delay 2 "$1" -o "$2"; }
+          get_photo "https://images.unsplash.com/photo-1518837695005-2083093ee35b?fm=jpg&fit=crop&w=1200&q=78" nexus/assets/harbor.jpg
+          get_photo "https://images.unsplash.com/photo-1507842217343-583bb7270b66?fm=jpg&fit=crop&w=1200&q=78" nexus/assets/archive.jpg
+          get_photo "https://images.unsplash.com/photo-1504190914346-e26a4e1d0ec2?fm=jpg&fit=crop&w=1200&q=78" nexus/assets/corridor.jpg
+          get_photo "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?fm=jpg&fit=crop&w=1200&q=78" nexus/assets/workshop.jpg
+          get_photo "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-lin.jpg
+          get_photo "https://images.unsplash.com/photo-1534528741775-53994a69daeb?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-zhiwei.jpg
+          get_photo "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-wenqiu.jpg
+          get_photo "https://images.unsplash.com/photo-1544005313-94ddf0286df2?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-xuzhao.jpg
+          get_photo "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-gulin.jpg
+          get_photo "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-zhou.jpg
+          get_photo "https://images.unsplash.com/photo-1494790108377-be9c29b29330?fm=jpg&fit=crop&w=260&h=320&q=76&crop=faces" nexus/assets/portrait-mom.jpg
+          get_photo "https://images.unsplash.com/photo-1645394119564-41a539d1cfa7?fm=jpg&fit=crop&w=1000&q=80" rulechat/assets/night-lift.jpg
+          get_photo "https://images.unsplash.com/photo-1504190914346-e26a4e1d0ec2?fm=jpg&fit=crop&w=1000&q=80" rulechat/assets/night-hall.jpg
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site files
