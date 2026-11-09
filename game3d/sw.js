@@ -1,5 +1,5 @@
 /* 刀域突围 3D · Service Worker：核心资源预缓存 + 音效按需缓存 */
-const V = 'aincrad3d-v44-0-0';
+const V = 'aincrad3d-v45-0-0';
 const CORE = ['./', './index.html', './game.js', './manifest.json', './enhance.js', './forge.js', './cinema.js', './landscape.js', './portal.css', './portal.js', './character-upgrade.js', './impact-upgrade.js', './hunt-arena.js', './class-combat.js', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
