@@ -838,7 +838,8 @@
     }
 
     // 播放推进
-    if (S.playing && now - S.lastAdvance > 105 / S.speed) {
+    const ascensionRate = [1, .85, .7, .55][window.__ECHO_ASCENSION__?.rank || 0] || 1;
+    if (S.playing && now - S.lastAdvance > 105 / S.speed * ascensionRate) {
       S.lastAdvance = now;
       const ev = S.trace[S.tick] ? S.trace[S.tick].events : [];
       handleEvents(ev);
@@ -1054,7 +1055,9 @@
     S.cfg = { mirrors: { ...S.level.init.mirrors }, tuners: { ...S.level.init.tuners } };
     S.history = []; S.moves = 0; S.playing = false; S.trace = null; S.tick = 0;
     S.activated = []; S.won = false; S.fx = []; S.parts = []; S.beat = 0; S.hintKey = -1;
-    S.melody = []; S.song = null; S.songPlaying = false; S.hintsLeft = 3;
+    S.melody = []; S.song = null; S.songPlaying = false;
+    const rank = window.__ECHO_ASCENSION__?.rank || 0;
+    S.hintsLeft = [3, 2, 1, 0][rank] ?? 3;
     stopSong();
     layout();
     $('lvNum').textContent = endless ? '无尽 · 第 ' + S.lv + ' 层' : '第 ' + S.lv + ' 关';
