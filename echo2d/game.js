@@ -1437,6 +1437,13 @@
     else if (e.code === 'KeyH') hint();
   });
 
+  // 难度在关卡中途切换时同步提示额度；已消耗的提示不会因降难度而返还。
+  window.addEventListener('echo:ascensionchange', e => {
+    const cap = [3, 2, 1, 0][Math.max(0, Math.min(3, Number(e.detail?.rank) || 0))];
+    S.hintsLeft = Math.min(S.hintsLeft, cap);
+    toast('难度已切换：' + (window.__ECHO_ASCENSION__?.label || '标准') + ' · 当前剩余提示 ' + S.hintsLeft, 2100);
+  });
+
   /* ---------------- 启动 ---------------- */
   resize();
   requestAnimationFrame(draw);
