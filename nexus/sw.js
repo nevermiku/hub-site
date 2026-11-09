@@ -1,4 +1,4 @@
-const CACHE='nexus-casebook-v55';
+const CACHE='nexus-casebook-v56';
 const CORE=['./','./index.html','./game.js','./board.js','./logic.js','./tabletop.js','./contradictions.js','./causality.js','./style.css','./portal.css','./portal.js','./tutorial.js','./workbench.js','./case-experience.js','./evidence-desk.js','./timeline-reconstruction.js','./evidence-relations.js','./source-audit.js', './case-ledger.js','./warm-edition.css', './harbor-roam.js','./audio-engine.js','./city-life.js','./harbor-case-bridge.js','./harbor-evidence-integration.js','./manifest.json','./assets/harbor.jpg','./assets/archive.jpg','./assets/corridor.jpg','./assets/workshop.jpg','./assets/portrait-lin.jpg','./assets/portrait-zhiwei.jpg','./assets/portrait-wenqiu.jpg','./assets/portrait-xuzhao.jpg','./assets/portrait-gulin.jpg','./assets/portrait-zhou.jpg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
