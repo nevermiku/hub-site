@@ -34,8 +34,12 @@ else if(id==='ocean'){rock(x,z);const c=new T.Mesh(new T.ConeGeometry(.5,3.5,6),
 else if(id==='snow'||id==='ice'){rock(x,z);if(i%2===0)crystal(x+2,z-1);}
 else{pillar(x,z);}
 }
+// 中近景地形：分层岩台、断裂石路、灌木和碎石堆，建立可读的地面尺度。
+for(let i=0;i<34;i++){const a=rnd()*Math.PI*2,r=13+rnd()*31,x=Math.cos(a)*r,z=Math.sin(a)*r,y=height(x,z);if(i%3===0){const slab=new T.Mesh(new T.DodecahedronGeometry(1,1),id==='snow'?M.snow:id==='lava'?M.lava:M.stone);slab.position.set(x,y+.18+rnd()*.18,z);slab.scale.set(1.1+rnd()*1.7,.18+rnd()*.22,.7+rnd()*.9);slab.rotation.y=a;slab.castShadow=true;slab.receiveShadow=true;gGroup.add(slab);}else if(i%3===1){const b=new T.Mesh(new T.DodecahedronGeometry(.72,1),id==='crystal'?M.crystal:id==='snow'?M.snow:M.dark);b.position.set(x,y+.35,z);b.scale.set(.65+rnd()*.8,.45+rnd()*.7,.6+rnd()*.9);b.rotation.set(rnd(),rnd(),rnd());b.castShadow=true;gGroup.add(b);}else{for(let j=0;j<3;j++){const leaf=new T.Mesh(new T.ConeGeometry(.16+rnd()*.12,.65+rnd()*.45,5),id==='snow'?M.ice:M.leaf);leaf.position.set(x+(rnd()-.5)*.8,y+.35,z+(rnd()-.5)*.8);leaf.rotation.z=(rnd()-.5)*.6;leaf.castShadow=true;gGroup.add(leaf);}}}
+// 断裂石板形成通往狩猎区域的路径，避免空旷平面感。
+for(let i=0;i<13;i++){const a=-.75+i*.12,r=9+i*1.45,x=Math.sin(a)*r,z=Math.cos(a)*r,y=height(x,z);const p=new T.Mesh(new T.BoxGeometry(1.8+rnd()*1.1,.18,.9+rnd()*.55),M.ruin);p.position.set(x,y+.12,z);p.rotation.y=a;p.rotation.z=(rnd()-.5)*.12;p.castShadow=p.receiveShadow=true;gGroup.add(p);}
 world.worldGroup.add(old);
 }
 G.on('floor',e=>{const f=Number(e&&e.f||1),b=e&&e.biome||'';setTimeout(()=>{try{build(f,b);}catch(err){console.warn('[AINCRAD landscape]',err);}},0);});
-window.__AINCRAD_LANDSCAPE__={version:'1.1.0',refresh:()=>build(Number(G.floor||1),G.world.biome&&G.world.biome.n||'')};
+window.__AINCRAD_LANDSCAPE__={version:'1.2.0',refresh:()=>build(Number(G.floor||1),G.world.biome&&G.world.biome.n||'')};
 })();
