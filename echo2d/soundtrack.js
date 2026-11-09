@@ -16,6 +16,8 @@ $('#echo-track-volume').oninput=e=>{if(audio)audio.volume=Number(e.target.value)
 $('#echo-track-play').onclick=async()=>{if(!audio){$('#echo-track-name').textContent='请先选择本地音频文件。';return;}try{await audio.play();}catch(e){$('#echo-track-name').textContent='浏览器未能播放该文件，请重新选择音频。';}};
 $('#echo-track-stop').onclick=stop;
 $('#echo-track-clear').onclick=()=>{stop();if(url)URL.revokeObjectURL(url);url='';audio=null;fileName='';$('#echo-track-file').value='';$('#echo-track-name').textContent='尚未选择音频';};
-window.addEventListener('pagehide',()=>{stop();if(url)URL.revokeObjectURL(url);});
+// pagehide 也会在浏览器进入 BFCache 时触发；暂停即可，避免撤销仍被播放器引用的 blob URL。
+window.addEventListener('pagehide',stop);
+window.addEventListener('pageshow',()=>{if(audio&&audio.ended)audio.currentTime=0;});
 window.__ECHO_SOUNDTRACK__={version:'1.0.0',get loaded(){return !!audio;},stop};
 })();
