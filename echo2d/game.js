@@ -578,6 +578,13 @@
     const rg = ctx.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, Math.max(W, H) * .62);
     rg.addColorStop(0, hexA(pal.glow, .16)); rg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    // 章节角色剪影插画：用清晰的脸部、发束和衣领构成背景角色，不再只有抽象线条。
+    ctx.save();const ax=W*.84,ay=H*.39,sc=Math.min(W,H)*.001;
+    const silhouette=ctx.createRadialGradient(ax,ay-20*sc,4,ax,ay,155*sc);silhouette.addColorStop(0,'rgba(155,180,255,.18)');silhouette.addColorStop(1,'rgba(22,31,60,0)');ctx.fillStyle=silhouette;ctx.fillRect(ax-170*sc,ay-180*sc,340*sc,420*sc);
+    ctx.globalAlpha=.25;ctx.fillStyle='#202d53';ctx.beginPath();ctx.ellipse(ax,ay+112*sc,116*sc,146*sc,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#d8c6e8';ctx.beginPath();ctx.ellipse(ax,ay-18*sc,56*sc,70*sc,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#24203e';ctx.beginPath();ctx.moveTo(ax-60*sc,ay-30*sc);ctx.quadraticCurveTo(ax-78*sc,ay-120*sc,ax+5*sc,ay-108*sc);ctx.quadraticCurveTo(ax+82*sc,ay-88*sc,ax+60*sc,ay-2*sc);ctx.lineTo(ax+45*sc,ay-38*sc);ctx.quadraticCurveTo(ax,ay-70*sc,ax-45*sc,ay-16*sc);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,221,245,.7)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax-27*sc,ay-12*sc);ctx.lineTo(ax-10*sc,ay-8*sc);ctx.moveTo(ax+12*sc,ay-8*sc);ctx.lineTo(ax+29*sc,ay-12*sc);ctx.stroke();ctx.restore();
     // 漂移光尘
     for (let i = 0; i < 60; i++) {
       const bx = (i * 137.5) % W, by = (i * 71.3) % H;
@@ -607,14 +614,13 @@
     // 底板
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const px = ox + x * cell, py = oy + y * cell;
-      ctx.fillStyle = (x + y) % 2 ? 'rgba(120,170,220,.045)' : 'rgba(120,170,220,.075)';
-      rr(px + 2, py + 2, cell - 4, cell - 4, cell * .13); ctx.fill();
-      ctx.strokeStyle = 'rgba(150,200,255,.10)'; ctx.lineWidth = 1;
-      rr(px + 2, py + 2, cell - 4, cell - 4, cell * .13); ctx.stroke();
-      // 网格十字微光（增强"走廊"感）
-      ctx.fillStyle = 'rgba(150,200,255,.05)';
-      ctx.fillRect(px + cell / 2 - .5, py + cell * .22, 1, cell * .56);
-      ctx.fillRect(px + cell * .22, py + cell / 2 - .5, cell * .56, 1);
+      // 立体六边形音符地砖：不再是空网格，远看形成一条连续的节奏轨道。
+      const inset=cell*.09,cy=py+cell/2,cx=px+cell/2;
+      ctx.save();ctx.shadowColor='rgba(0,0,0,.38)';ctx.shadowBlur=7;ctx.shadowOffsetY=4;
+      ctx.beginPath();for(let q=0;q<6;q++){const a=Math.PI/3*q-Math.PI/6,xx=cx+Math.cos(a)*(cell*.47-inset),yy=cy+Math.sin(a)*(cell*.47-inset);q?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy)}ctx.closePath();
+      const tileGrad=ctx.createLinearGradient(px,py,px+cell,py+cell);tileGrad.addColorStop(0,(x+y)%2?'rgba(119,143,219,.19)':'rgba(73,185,203,.18)');tileGrad.addColorStop(1,'rgba(16,23,43,.72)');ctx.fillStyle=tileGrad;ctx.fill();ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      ctx.strokeStyle='rgba(186,210,255,.24)';ctx.lineWidth=1.1;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx-cell*.18,cy);ctx.lineTo(cx,cy-cell*.18);ctx.lineTo(cx+cell*.18,cy);ctx.lineTo(cx,cy+cell*.18);ctx.closePath();ctx.strokeStyle='rgba(202,220,255,.12)';ctx.stroke();ctx.restore();
     }
 
     // 节点顺序引导：把已点亮与下一个可达节点用虚线连起来
