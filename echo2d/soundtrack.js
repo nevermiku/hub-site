@@ -10,7 +10,11 @@ const style=document.createElement('style');style.textContent=`
 `;document.head.appendChild(style);
 const root=document.createElement('div');root.id='echo-soundtrack';root.innerHTML='<button id="echo-track-toggle">♫ 原唱主题曲</button><div id="echo-track-panel"><b>《错位时空》 · 艾辰原唱</b><p class="note">使用官方音乐人频道发布的原版录音。点击播放后可在游戏中听歌；播放由官方播放器提供，不使用翻唱、AI 仿唱或自制旋律替代。</p><div id="echo-track-player"><button id="echo-track-play">▶ 播放原唱</button></div><p class="note">若当前网络无法加载播放器，可直接前往官方音源收听。</p><a href="https://www.youtube.com/watch?v=EDLanl2PC_I" target="_blank" rel="noopener" style="color:#b9a7ff;font-size:11px">打开官方原唱音源 ↗</a></div>';document.body.appendChild(root);
 const panel=$('#echo-track-panel');$('#echo-track-toggle').onclick=()=>panel.classList.toggle('open');
+const ORIGINAL='EDLanl2PC_I';
+function mountOriginal(autoplay){const box=$('#lyricBox');if(!box)return;box.innerHTML='<div class="lyricTag">♪ 通关原唱 · 艾辰《错位时空》</div><p class="note">本关通关后播放官方原唱录音，不再用程序生成旋律代替人声。</p><iframe title="艾辰《错位时空》原唱" src="https://www.youtube-nocookie.com/embed/'+ORIGINAL+'?'+(autoplay?'autoplay=1&':'')+'rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';}
+const win=$('#win');if(win){new MutationObserver(()=>{if(!win.classList.contains('hidden'))mountOriginal(true);}).observe(win,{attributes:true,attributeFilter:['class']});}
+const replay=$('#btnReplaySong');if(replay)replay.onclick=()=>mountOriginal(true);
 $('#echo-track-play').onclick=()=>{$('#echo-track-player').innerHTML='<iframe title="艾辰《错位时空》官方原唱" src="https://www.youtube-nocookie.com/embed/EDLanl2PC_I?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';};
 window.addEventListener('pagehide',()=>{const frame=$('#echo-track-player iframe');if(frame)frame.src='about:blank';});
-window.__ECHO_SOUNDTRACK__={version:'2.0.0',source:'official-original-recording',stop(){const frame=$('#echo-track-player iframe');if(frame)frame.src='about:blank';}};
+window.__ECHO_SOUNDTRACK__={version:'3.0.0',source:'official-original-recording',stop(){const frame=$('#echo-track-player iframe');if(frame)frame.src='about:blank';}};
 })();
