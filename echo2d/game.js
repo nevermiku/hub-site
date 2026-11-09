@@ -1080,7 +1080,9 @@
     S.cfg = { mirrors: { ...level.init.mirrors }, tuners: { ...level.init.tuners } };
     S.history = []; S.moves = 0; S.playing = false; S.trace = null; S.tick = 0;
     S.activated = []; S.won = false; S.fx = []; S.parts = []; S.beat = 0; S.hintKey = -1;
-    S.melody = []; S.song = null; S.songPlaying = false; S.hintsLeft = 3; stopSong();
+    S.melody = []; S.song = null; S.songPlaying = false;
+    const rank = window.__ECHO_ASCENSION__?.rank || 0;
+    S.hintsLeft = [3, 2, 1, 0][rank] ?? 3; stopSong();
     layout();
     $('lvNum').textContent = '主题 · 第 ' + S.lv + ' 关';
     $('chapName').textContent = '时空错位 · 主题关卡';
