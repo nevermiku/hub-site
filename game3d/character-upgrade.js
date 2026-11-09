@@ -38,6 +38,22 @@ function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.
  else if(cls==='cleric'){add(geo.torus,gold,[0,.3,.03],[.26,.26,.05],[Math.PI/2,0,0]);add(geo.box,glow,[0,.3,.07],[.06,.42,.035]);}
  else if(cls==='dual'){for(const s of [-1,1])add(geo.box,steel,[s*.22,.34,.02],[.045,.55,.035],[0,0,s*.15]);}
  else {add(geo.box,gold,[0,.48,.03],[.32,.055,.04]);}
+ // 第二层职业专属结构：胸腹分片、腰甲、背部挂件，不再只靠肩甲区分职业。
+ const waist=cls==='berserker'?M.gold:cls==='mage'?M.cyan:cls==='rogue'?M.dark:M.silver;
+ add(geo.box,waist,[0,-.08,.115],[.34,.105,.13]);
+ add(geo.box,M.dark,[0,-.17,.13],[.28,.055,.12]);
+ for(let side of [-1,1]){
+  add(geo.box,cls==='knight'?M.gold:steel,[side*.19,-.16,.12],[.13,.22,.065],[0,0,side*.22]);
+  add(geo.box,M.dark,[side*.105,.05,.19],[.065,.13,.025],[0,0,side*.12]);
+  add(geo.sphere,glow,[side*.12,.02,.22],[.018,.018,.012]);
+ }
+ if(cls==='archer'||cls==='rogue'||cls==='dual'){
+  for(let side of [-1,1]){add(geo.box,M.leather,[side*.24,.05,-.17],[.12,.34,.055],[0,0,side*.18]);add(geo.cone,steel,[side*.27,-.13,-.19],[.045,.18,.045],[0,0,side*.35]);}
+ }else if(cls==='knight'||cls==='lancer'||cls==='berserker'){
+  for(let side of [-1,1])add(geo.box,cls==='berserker'?M.gold:M.silver,[side*.24,-.04,-.12],[.16,.27,.09],[0,0,side*.2]);
+ }
+ // 胸口铆钉与腹甲刻线，形成可读的实体分层。
+ for(let side of [-1,1])for(let row=0;row<2;row++)add(geo.sphere,gold,[side*(.18-row*.045),.19-row*.055,.224],[.018,.018,.012]);
  // 职业肩甲与背部轮廓：强化不同职业的体块辨识度。
  const shoulderMat=cls==='berserker'?M.gold:cls==='mage'?M.cyan:M.silver;
  for(const side of [-1,1]){add(geo.sphere,shoulderMat,[side*.29,.52,-.015],[.17,cls==='knight'?.13:.09,.14],[0,0,side*.18]);if(['lancer','katana','rogue'].includes(cls))add(geo.cone,steel,[side*.34,.57,-.02],[.055,.2,.055],[0,0,side*.45]);}
