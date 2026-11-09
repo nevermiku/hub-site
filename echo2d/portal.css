@@ -22,3 +22,13 @@
 #cv{filter:saturate(1.22) contrast(1.06)}#title .box:after{content:'';position:absolute;inset:auto 7% 12px;height:72px;pointer-events:none;background:radial-gradient(ellipse at 50% 100%,#72dfff22,transparent 68%);filter:blur(8px)}.echo-stats,.echo-stat{box-shadow:inset 0 1px #ffffff0c,0 10px 28px #0003}@media(max-width:600px){#title .box{max-height:92dvh;overflow:auto}.echo-stats{grid-template-columns:repeat(2,1fr)}}
 /* stage depth and rhythm feedback presentation */
 #cv{filter:saturate(1.28) contrast(1.08)}#game{background-image:radial-gradient(ellipse at 50% 100%,#67dfff12,transparent 65%)}
+
+/* UI cleanup pass: simplify title hierarchy and make touch targets consistent */
+#title .box{width:min(92vw,680px);padding:clamp(18px,3vw,30px);gap:10px}
+.echo-stats{gap:10px;margin:14px auto}
+.echo-stat{border-radius:12px}
+.echo-tags{gap:7px;margin:10px auto}
+#title button,#win button{min-height:42px}
+#win .box{width:min(92vw,650px);max-height:90dvh;overflow:auto;padding:clamp(16px,3vw,26px)}
+#win .lyricBox{margin:12px 0;border-radius:14px}
+@media(max-width:600px){#title .box{width:94vw;padding:16px 12px}#win .box{width:94vw;padding:15px 12px}.echo-stats{gap:7px}}
