@@ -4,4 +4,9 @@ for(let i=0;i<9;i++){const a=(i/9)*Math.PI*2,r=24+(i%3)*3,x=Math.cos(a)*r,z=Math
 for(let i=0;i<7;i++){const a=i*2.399,r=12+(i%3)*4,x=Math.cos(a)*r,z=Math.sin(a)*r,y=h(x,z);put(new T.ConeGeometry(.65+(i%2)*.3,3.8+(i%3)*1.2,6),crystal,x,y+2,z,.8,1,.8,a);}
 put(new T.CylinderGeometry(8.8,10.5,1.1,12),slab,0,h(0,0)+.35,0,1,1,1);
 for(let i=0;i<12;i++){const a=i*Math.PI/6,x=Math.cos(a)*10,z=Math.sin(a)*10;put(new T.ConeGeometry(.35,.9,5),bone,x,h(x,z)+1.05,z,1,1,1,a);}
+// 第二层狩猎场结构：断裂环形石梁、警戒石柱和嵌入地面的矿脉。
+const ringMat=mat(hot?0x9a4934:0x6b7779,.72,.32),rune=mat(hot?0xff8b4b:0x76d7e5,.32,.55);
+for(let k=0;k<3;k++){const rr=18+k*5,arc=new T.TorusGeometry(rr,.22-k*.035,8,72,Math.PI*1.42),ob=new T.Mesh(arc,ringMat);ob.rotation.x=Math.PI/2;ob.rotation.z=k*.7;ob.position.y=h(0,0)+.2+k*.18;g.add(ob);}
+for(let i=0;i<12;i++){const a=i*Math.PI/6,r=31+(i%3)*2,x=Math.cos(a)*r,z=Math.sin(a)*r,y=h(x,z);put(new T.CylinderGeometry(.38,.72,5.5+(i%3),7),rock,x,y+2.7,z,1,1,1,(i%2?.12:-.12));put(new T.BoxGeometry(.9,.12,.16),rune,x,y+4.8+(i%3),z,1,1,1,a);}
+for(let i=0;i<18;i++){const a=i*Math.PI/9,r=13+(i%4)*1.1,x=Math.cos(a)*r,z=Math.sin(a)*r;put(new T.BoxGeometry(1.3,.08,.18),rune,x,h(x,z)+.07,z,1,1,1,a);}
 w.worldGroup.add(g)}G.on('floor',e=>setTimeout(()=>{try{build(Number(e?.f||1),e?.biome||'')}catch(x){console.warn(x)}},90));const st=document.createElement('style');st.textContent='#game.hunt-warning:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9000;background:radial-gradient(ellipse,transparent 25%,#180703aa);animation:hw 1.8s}@keyframes hw{0%,100%{opacity:0}25%{opacity:1}}';document.head.append(st);const bi=document.querySelector('#bossIntro');if(bi)new MutationObserver(()=>{if(!bi.classList.contains('hidden')){document.querySelector('#game')?.classList.add('hunt-warning');setTimeout(()=>document.querySelector('#game')?.classList.remove('hunt-warning'),1800)}}).observe(bi,{attributes:true,attributeFilter:['class']});})();
