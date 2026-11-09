@@ -59,6 +59,28 @@ function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.
  for(const side of [-1,1]){add(geo.sphere,shoulderMat,[side*.29,.52,-.015],[.17,cls==='knight'?.13:.09,.14],[0,0,side*.18]);if(['lancer','katana','rogue'].includes(cls))add(geo.cone,steel,[side*.34,.57,-.02],[.055,.2,.055],[0,0,side*.45]);}
  if(['mage','cleric'].includes(cls)){add(geo.cone,M.dark,[0,.04,-.16],[.29,.43,.08],[Math.PI,0,0]);add(geo.sphere,glow,[0,.14,-.24],[.07,.12,.035]);}
  if(cls==='berserker'||cls==='knight'){add(geo.box,M.dark,[0,-.02,-.14],[.42,.22,.12]);for(let k=0;k<3;k++)add(geo.box,gold,[0,-.03-k*.055,-.21],[.34-k*.04,.018,.025]);}
+ // 下肢装备不再共用裸腿轮廓：护膝、胫甲、踝扣与鞋尖按职业重量区分。
+ const legMat=cls==='berserker'?M.gold:cls==='mage'||cls==='cleric'?M.dark:M.silver;
+ for(const side of [-1,1]){
+  add(geo.box,M.dark,[side*.105,-.48,.035],[.19,.22,.17],[0,0,side*.06]);
+  add(geo.box,legMat,[side*.105,-.56,.105],[.15,.24,.075],[0,0,side*.04]);
+  add(geo.box,M.gold,[side*.105,-.49,.151],[.16,.035,.018]);
+  add(geo.sphere,cls==='rogue'?M.dark:M.gold,[side*.105,-.68,.12],[.095,.055,.16]);
+  add(geo.box,cls==='archer'||cls==='rogue'?M.leather:M.dark,[side*.105,-.72,.18],[.12,.045,.1]);
+  if(['knight','lancer','berserker'].includes(cls)){
+   add(geo.box,legMat,[side*.105,-.34,.15],[.2,.13,.1],[0,0,side*.08]);
+   add(geo.box,M.gold,[side*.105,-.35,.205],[.15,.025,.018]);
+  }else{
+   add(geo.box,M.leather,[side*.105,-.36,.13],[.16,.1,.055],[0,0,side*.08]);
+  }
+ }
+ // 胸甲下摆分片与侧腰束带，让躯干和腿部之间有明确的装备过渡。
+ for(let side of [-1,1]){
+  add(geo.box,cls==='mage'||cls==='cleric'?M.dark:legMat,[side*.17,-.22,.08],[.12,.25,.055],[0,0,side*.2]);
+  add(geo.box,M.gold,[side*.17,-.22,.115],[.018,.2,.012],[0,0,side*.2]);
+ }
+ if(cls==='berserker')for(let side of [-1,1])add(geo.cone,M.gold,[side*.31,-.2,-.08],[.07,.28,.07],[0,0,side*.3]);
+ if(cls==='archer')add(geo.box,M.leather,[0,.03,-.29],[.19,.34,.1],[.12,0,0]);
  // 职业背部结构：披风、箭袋、法器背架与重甲背板采用不同轮廓。
  const backMat=cls==='mage'||cls==='cleric'?M.cyan:cls==='berserker'?M.gold:cls==='rogue'?M.dark:M.silver;
  if(['knight','lancer','swordsman','katana','berserker'].includes(cls)){add(geo.box,M.dark,[0,.12,-.205],[.39,.43,.075],[.12,0,0]);add(geo.box,backMat,[0,.2,-.255],[.31,.34,.035],[.12,0,0]);for(let side of [-1,1])add(geo.box,M.gold,[side*.17,.16,-.275],[.035,.34,.025],[.12,0,side*.12]);}
@@ -181,5 +203,5 @@ function buildSkyline(){
 }
 function tick(){if(!G.world)return;upgradeCharacter();if(G.floor!==lastFloor){lastFloor=G.floor;buildSkyline();}}
 let frames=0;function loop(){if(++frames%14===0)try{tick()}catch(e){console.warn('[AINCRAD armor]',e)}requestAnimationFrame(loop)}requestAnimationFrame(loop);
-window.__AINCRAD_CHARACTER_UPGRADE__={version:'3.0.0',refresh:upgradeCharacter,rebuild:buildSkyline};
+window.__AINCRAD_CHARACTER_UPGRADE__={version:'3.1.0',refresh:upgradeCharacter,rebuild:buildSkyline};
 })();
