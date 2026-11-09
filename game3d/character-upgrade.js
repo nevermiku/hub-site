@@ -81,6 +81,32 @@ function applyClassRig(p,cls,torso){if(!torso)return;const prior=torso.userData.
  }
  if(cls==='berserker')for(let side of [-1,1])add(geo.cone,M.gold,[side*.31,-.2,-.08],[.07,.28,.07],[0,0,side*.3]);
  if(cls==='archer')add(geo.box,M.leather,[0,.03,-.29],[.19,.34,.1],[.12,0,0]);
+ // 新增实体护臂、腕甲和胸前职业徽记；让武器握持端与躯干装备形成连续结构。
+ for(const side of [-1,1]){
+  const armMat=cls==='berserker'?M.gold:cls==='mage'||cls==='cleric'?M.cyan:M.silver;
+  add(geo.sphere,armMat,[side*.37,.28,.025],[.105,.17,.13],[0,0,side*.28]);
+  add(geo.box,M.dark,[side*.39,.04,.075],[.105,.25,.12],[0,0,side*.12]);
+  add(geo.box,armMat,[side*.4,.02,.14],[.12,.19,.045],[0,0,side*.1]);
+  add(geo.torus,M.gold,[side*.4,-.075,.12],[.09,.09,.035],[Math.PI/2,0,0]);
+  add(geo.box,M.dark,[side*.38,-.12,.08],[.12,.075,.12],[0,0,side*.15]);
+ }
+ // 领口、胸甲中央徽记和头部护具细节；法系保留发光核心，近战职业采用金属额甲。
+ add(geo.box,M.dark,[0,.57,.12],[.22,.09,.11]);
+ add(geo.box,cls==='mage'||cls==='cleric'?glow:gold,[0,.27,.235],[.105,.13,.035]);
+ add(geo.torus,cls==='mage'||cls==='cleric'?glow:gold,[0,.27,.255],[.085,.085,.018],[0,0,0]);
+ if(['knight','lancer','berserker','swordsman','katana'].includes(cls)){
+  add(geo.box,cls==='berserker'?gold:steel,[0,.88,.025],[.38,.11,.22]);
+  add(geo.box,M.dark,[0,.82,.13],[.29,.045,.035]);
+  add(geo.cone,cls==='berserker'?gold:steel,[0,1.0,-.015],[.07,.22,.07]);
+  for(const side of [-1,1])add(geo.box,gold,[side*.17,.87,.14],[.025,.09,.025],[0,0,side*.18]);
+ }else if(cls==='archer'||cls==='rogue'){
+  add(geo.box,M.dark,[0,.91,-.015],[.42,.13,.23],[.12,0,0]);
+  add(geo.box,M.leather,[0,.82,.13],[.31,.055,.045]);
+  add(geo.cone,M.leather,[0,1.0,-.08],[.09,.24,.09]);
+ }else{
+  add(geo.torus,glow,[0,.88,.03],[.18,.2,.055],[Math.PI/2,0,0]);
+  add(geo.sphere,glow,[0,.88,.15],[.045,.045,.025]);
+ }
  // 职业背部结构：披风、箭袋、法器背架与重甲背板采用不同轮廓。
  const backMat=cls==='mage'||cls==='cleric'?M.cyan:cls==='berserker'?M.gold:cls==='rogue'?M.dark:M.silver;
  if(['knight','lancer','swordsman','katana','berserker'].includes(cls)){add(geo.box,M.dark,[0,.12,-.205],[.39,.43,.075],[.12,0,0]);add(geo.box,backMat,[0,.2,-.255],[.31,.34,.035],[.12,0,0]);for(let side of [-1,1])add(geo.box,M.gold,[side*.17,.16,-.275],[.035,.34,.025],[.12,0,side*.12]);}
@@ -203,5 +229,5 @@ function buildSkyline(){
 }
 function tick(){if(!G.world)return;upgradeCharacter();if(G.floor!==lastFloor){lastFloor=G.floor;buildSkyline();}}
 let frames=0;function loop(){if(++frames%14===0)try{tick()}catch(e){console.warn('[AINCRAD armor]',e)}requestAnimationFrame(loop)}requestAnimationFrame(loop);
-window.__AINCRAD_CHARACTER_UPGRADE__={version:'3.1.0',refresh:upgradeCharacter,rebuild:buildSkyline};
+window.__AINCRAD_CHARACTER_UPGRADE__={version:'3.2.0',refresh:upgradeCharacter,rebuild:buildSkyline};
 })();
