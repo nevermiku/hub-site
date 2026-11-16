@@ -75,3 +75,32 @@
 ### 本轮代码验证
 - `game3d/combat-contracts.js`、`nexus/evidence-relations.js`、两款对应 Service Worker 均通过语法解析。
 - 本轮未执行浏览器自动化、真机触控、实际战斗计数或跨刷新存档测试；修复依据为源码逻辑审计，设备端仍待验收。
+
+
+## 第四轮：长篇章节恢复与时间线存档健壮性（2026-11-16）
+
+### 夜班群聊
+- 修复第十七章长篇故事的“已完成章节重新打开”恢复错误。
+- 原逻辑在读取到已完成且处于最后一段的存档时，把 step 强行设为 25 并清除 completed；章节数组只有 25 段（索引 0–24），随后 render() 会读取不存在的章节并触发异常。
+- 现在保留存档中的最后一段索引与 completed 状态，重新打开时由现有完成页逻辑恢复结案报告，不再越界。
+- Service Worker 缓存版本更新为 rulechat-v38。
+
+### 衍尾之宙
+- 时间线重建模块在提升本机最佳分数时，原先直接写 localStorage；在浏览器存储被禁用、配额异常或隐私模式限制时，可能让核对按钮处理过程抛错。
+- 已将最佳分数写入改为容错处理：存储失败不会中断本次时间线评分。
+- Service Worker 缓存版本更新为 nexus-casebook-v60。
+
+### 回声 ECHO 验证
+- 在隔离的模拟环境中执行 theme-levels.js，10 个主题关卡均成功构建。
+- 检查每关的格子坐标均在棋盘范围内，且均包含声源与出口；前 6 关生成路径长度分别为 11、13、13、12、16、16，后 4 关为特殊多声源/机关关卡，不使用普通单路径字段。
+- 该项是关卡构建结构测试，不等同于真实音频传播、玩家解法或所有特殊机关组合的通关验证。
+
+### 四款脚本语法回归
+以下文件全部通过 JavaScript 语法解析：
+- 四款主逻辑：game3d/game.js、echo2d/game.js、nexus/game.js、rulechat/app.js。
+- 本轮涉及模块：rulechat/long-chapter.js、rulechat/sw.js、nexus/timeline-reconstruction.js、nexus/sw.js。
+- 交叉回归：game3d/combat-contracts.js、echo2d/theme-levels.js。
+
+### 验收边界
+- 本轮未进行浏览器自动化、真实手机操作、实际音频传播、战斗首领击杀或完整剧情通关。
+- 所有修改仍位于独立分支；尚未合并 main，也未部署生产版。
