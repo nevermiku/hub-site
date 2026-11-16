@@ -51,11 +51,11 @@ function renderMastery(){const panel=document.querySelector('#class-mastery-pane
 const originalAttack=API.attack.bind(API);
 API.attack=function(...args){
  const ok=originalAttack(...args);if(!ok)return ok;
- const p=G.player;if(!p)return ok;const masteryId=API.SAVE&&API.SAVE.cls||'swordsman';mastery[masteryId]=mastery[masteryId]||{attacks:0,bestCombo:0,lastUsed:''};mastery[masteryId].attacks++;mastery[masteryId].bestCombo=Math.max(mastery[masteryId].bestCombo,comboChain);mastery[masteryId].lastUsed=new Date().toISOString();saveMastery();
+ const p=G.player;if(!p)return ok;
  const id=API.SAVE&&API.SAVE.cls||'swordsman',s=styles[id]||styles.swordsman;if(id==='archer')fireArrow(p);
  const now=performance.now(),gap=now-lastAttackAt;
  if(comboClass!==id||gap>=1450)comboChain=0;
- comboClass=id;comboChain=Math.min(5,comboChain+1);lastAttackAt=now;
+ comboClass=id;comboChain=Math.min(5,comboChain+1);lastAttackAt=now;const masteryId=id;mastery[masteryId]=mastery[masteryId]||{attacks:0,bestCombo:0,lastUsed:''};mastery[masteryId].attacks++;mastery[masteryId].bestCombo=Math.max(mastery[masteryId].bestCombo,comboChain);mastery[masteryId].lastUsed=new Date().toISOString();saveMastery();
  const chainStep=comboChain-1;
  const chainBonus=id==='dual'?1+Math.min(.3,chainStep*.075):
   id==='rogue'?1+Math.min(.28,chainStep*.07):
